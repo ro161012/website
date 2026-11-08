@@ -66,7 +66,7 @@ async function copyDiscord() {
 
 		<section class="hero">
 			<div class="hero__copy">
-				<p class="eyebrow">Portfolio <span>MMXXVI</span></p>
+				<p class="eyebrow">Portfolio</p>
 				<h1 class="wordmark">rxbow</h1>
 				<p class="lede">
 					Also known as <strong>{{ DISCORD_USERNAME }}</strong>.
@@ -137,7 +137,7 @@ async function copyDiscord() {
 		</section>
 
 		<footer class="foot">
-			<span>&copy; MMXXVI rxbow</span>
+			<span>&copy; rxbow</span>
 			<span class="foot__credit">Liquid glass after kube.io &amp; mkj0kjay</span>
 		</footer>
 
