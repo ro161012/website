@@ -11,14 +11,15 @@ Live effects come from [`@ybouane/liquidglass`](https://github.com/ybouane/liqui
 
 ## Run it
 
-No build step, no dependencies — it is plain HTML, CSS and one ES module.
+No build step, no package manager — plain HTML, CSS and one ES module. The glass
+library is vendored in `vendor/liquidglass/` (see [Vendored glass library](#vendored-glass-library)).
 
 ```bash
 npx serve .          # or: python -m http.server 8000
 ```
 
-Open the printed URL. The glass library is loaded from jsDelivr, so the first paint
-needs network access; without it the page falls back to a CSS frost automatically.
+Open the printed URL. Google Fonts need network access on first paint; if the glass
+module fails to initialise the page automatically falls back to a CSS frost.
 
 ## Links wired up
 
@@ -36,6 +37,23 @@ index.html    markup — #stage is the glass root, every .glass element is a dir
 styles.css    layout + typography + CSS fallback
 main.js       boots LiquidGlass, Discord copy handler
 assets/       skin-body.png (full render), skin-face.png (avatar + favicon), skin-texture.png (raw 64×64)
+vendor/       liquidglass dist (patched once, see NOTICE.md)
+```
+
+## Vendored glass library
+
+`vendor/liquidglass/liquidglass.js` is `@ybouane/liquidglass@1.0.3` with a single
+change to `createImage()`: it resolves on `load` instead of awaiting
+`img.decode()`. Upstream's `decode()` never settles on the font-embedded SVG data
+URLs the library builds, which left `LiquidGlass.init()` pending forever — the
+panels had canvases but were never painted. Details and diff in
+[`vendor/liquidglass/NOTICE.md`](vendor/liquidglass/NOTICE.md).
+
+Tune the panels live from the console with the debug handle:
+
+```js
+rxbowGlass.fps                        // current frame rate
+rxbowGlass.markChanged()              // force a full re-render
 ```
 
 ## Updating the skin

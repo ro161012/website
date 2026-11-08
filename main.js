@@ -7,7 +7,10 @@
  * and images before initialising.
  */
 
-const LIQUIDGLASS_URL = 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
+// Vendored @ybouane/liquidglass@1.0.3 with a one-line fix in createImage() —
+// see vendor/liquidglass/NOTICE.md. Imported locally so the glass never
+// depends on a CDN being reachable at runtime.
+const LIQUIDGLASS_URL = './vendor/liquidglass/liquidglass.js';
 const DISCORD_USERNAME = 'ro161012';
 
 const stage = document.getElementById('stage');
@@ -77,20 +80,31 @@ function hideShaderCanvases() {
 	}
 }
 
+const t0 = performance.now();
+const mark = (label) => console.info(`[rxbow] ${label} @ ${Math.round(performance.now() - t0)}ms`);
+
 async function start() {
 	await waitForWindowLoad();
+	mark('window loaded');
 	await document.fonts.ready;
+	mark('fonts ready');
 	await decodeImages();
+	mark('images decoded');
 
 	const { LiquidGlass } = await import(LIQUIDGLASS_URL);
+	mark('library imported');
 
 	glass = await LiquidGlass.init({
 		root: stage,
 		glassElements,
 	});
+	mark('glass ready');
 
 	hideShaderCanvases();
 	stage.dataset.glass = 'on';
+
+	// Debug handle for tuning shader values from the console.
+	window.rxbowGlass = glass;
 }
 
 if (discordBtn) {
