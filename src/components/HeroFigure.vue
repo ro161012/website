@@ -71,8 +71,7 @@ onBeforeUnmount(() => {
 			v-show="ready"
 			class="figure__skin"
 			role="img"
-			tabindex="0"
-			aria-label="rxbow's Minecraft character, standing. Drag to turn."
+			aria-label="rxbow's Minecraft character, standing."
 		/>
 
 		<!-- Loading and failure states are drawn, not photographed, so the hero
@@ -90,6 +89,5 @@ onBeforeUnmount(() => {
 		</div>
 
 		<div class="figure__ground" aria-hidden="true"></div>
-		<p v-if="ready" class="figure__hint" aria-hidden="true">drag to turn</p>
 	</div>
 </template>

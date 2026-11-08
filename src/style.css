@@ -387,15 +387,9 @@ a {
 	display: block;
 	height: var(--skin-h);
 	width: calc(var(--skin-h) * 0.56);
-	touch-action: none;
-	cursor: grab;
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-user-drag: none;
-}
-
-.figure__skin.is-dragging {
-	cursor: grabbing;
 }
 
 /* the plinth line the figure stands on, drawn through the projected feet */
@@ -428,21 +422,6 @@ a {
 	border-radius: 50%;
 	background: radial-gradient(closest-side, rgba(20, 20, 20, 0.22), rgba(20, 20, 20, 0) 72%);
 	filter: blur(1px);
-}
-
-.figure__hint {
-	position: absolute;
-	left: 50%;
-	top: calc(var(--ground) * 100% + 13px);
-	translate: -50% 0;
-	margin: 0;
-	font-family: var(--font-display);
-	font-size: 8px;
-	letter-spacing: 0.22em;
-	text-transform: uppercase;
-	color: var(--ink-faint);
-	white-space: nowrap;
-	pointer-events: none;
 }
 
 .figure__placeholder {
@@ -532,9 +511,6 @@ a {
 		order: 2;
 	}
 
-	.figure__hint {
-		display: none;
-	}
 }
 
 @media (max-width: 560px) {

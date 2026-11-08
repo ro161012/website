@@ -158,66 +158,6 @@ export async function initHero3D(canvas, { skinUrl, onGround }) {
 	// auto-detect can swap the slim/classic model once the skin decodes
 	window.setTimeout(fitCamera, 350);
 
-		/* ---- pointer: drag to turn, with the release velocity carrying on ---- */
-	const YAW_PER_PX = 0.008;
-	let yaw = 0;
-	let spin = 0;
-	let lastX = 0;
-	let dragging = false;
-
-	const onDown = (event) => {
-		dragging = true;
-		spin = 0;
-		lastX = event.clientX;
-		canvas.classList.add('is-dragging');
-		try {
-			canvas.setPointerCapture(event.pointerId);
-		} catch {
-			/* capture is a nicety */
-		}
-	};
-
-	const onMove = (event) => {
-		if (!dragging) return;
-		const dx = event.clientX - lastX;
-		yaw += dx * YAW_PER_PX;
-		spin = dx * YAW_PER_PX * 0.55;
-		lastX = event.clientX;
-	};
-
-	const onUp = () => {
-		if (!dragging) return;
-		dragging = false;
-		canvas.classList.remove('is-dragging');
-	};
-
-	canvas.addEventListener('pointerdown', onDown);
-	window.addEventListener('pointermove', onMove, { passive: true });
-	window.addEventListener('pointerup', onUp);
-	window.addEventListener('pointercancel', onUp);
-	canvas.addEventListener('keydown', (event) => {
-		// keyboard spin for anyone who cannot drag
-		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-			event.preventDefault();
-			yaw += event.key === 'ArrowLeft' ? -0.2 : 0.2;
-		}
-	});
-
-	/* ---- frame loop: apply the yaw and let a released drag's spin decay ---- */
-	let last = performance.now();
-	let raf = 0;
-	const tick = (now) => {
-		const dt = Math.min(0.05, (now - last) / 1000);
-		last = now;
-		if (!dragging) {
-			yaw += spin;
-			spin *= Math.pow(0.02, dt);
-		}
-		viewer.playerWrapper.rotation.y = yaw;
-		raf = requestAnimationFrame(tick);
-	};
-	raf = requestAnimationFrame(tick);
-
 	/* ---- keep the drawing buffer in step with the CSS box ---- */
 	const resize = () => {
 		const w = canvas.clientWidth;
@@ -238,12 +178,8 @@ export async function initHero3D(canvas, { skinUrl, onGround }) {
 		fitCamera,
 		groundRatio,
 		destroy() {
-			cancelAnimationFrame(raf);
 			observer.disconnect();
 			window.removeEventListener('resize', resize);
-			window.removeEventListener('pointermove', onMove);
-			window.removeEventListener('pointerup', onUp);
-			window.removeEventListener('pointercancel', onUp);
 			viewer.dispose();
 		},
 	};
