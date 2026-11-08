@@ -136,11 +136,6 @@ async function copyDiscord() {
 			</div>
 		</section>
 
-		<footer class="foot">
-			<span>&copy; rxbow</span>
-			<span class="foot__credit">Liquid glass after kube.io &amp; mkj0kjay</span>
-		</footer>
-
 		<GlassPanel
 			class="toast"
 			:class="{ 'is-visible': toastVisible }"

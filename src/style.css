@@ -473,26 +473,6 @@ a {
 
 /* ---------------------------------------------- footer */
 
-.foot {
-	position: relative;
-	z-index: 10;
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 18px;
-	padding-top: 14px;
-	border-top: 1px solid var(--hair);
-	font-family: var(--font-display);
-	font-size: 8.5px;
-	letter-spacing: 0.2em;
-	text-transform: uppercase;
-	color: var(--ink-faint);
-}
-
-.foot__credit {
-	color: rgba(20, 20, 20, 0.3);
-}
-
 /* ---------------------------------------------- toast */
 
 .toast {
@@ -572,15 +552,6 @@ a {
 
 	.pill__sub {
 		font-size: 9.5px;
-	}
-
-	.foot {
-		font-size: 7.5px;
-		letter-spacing: 0.16em;
-	}
-
-	.foot__credit {
-		display: none;
 	}
 }
 
