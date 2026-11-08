@@ -212,13 +212,38 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	const projected = new THREE.Vector3();
 
 	/**
+	 * The box the camera fits. A plain Box3 on the player includes the hidden
+	 * ear group, which is 5 units taller than the figure and would frame it
+	 * small with a lopsided margin, so only visible meshes count.
+	 */
+	function visibleBounds() {
+		const box = new THREE.Box3();
+		const meshBox = new THREE.Box3();
+		body.traverse((object) => {
+			if (!object.isMesh) return;
+			let visible = true;
+			for (let node = object; node && node !== body; node = node.parent) {
+				if (node.visible === false) {
+					visible = false;
+					break;
+				}
+			}
+			if (!visible) return;
+			meshBox.setFromObject(object);
+			if (meshBox.isEmpty()) return;
+			box.union(meshBox);
+		});
+		return box.isEmpty() ? new THREE.Box3().setFromObject(body) : box;
+	}
+
+	/**
 	 * Frame the whole standing body — feet to head — for whatever box the canvas
 	 * currently has. skinview3d's own framing zooms to the width, which crops a
 	 * tall, narrow column, so the distance is solved from both axes instead.
 	 */
 	function fitCamera() {
 		body.updateWorldMatrix(true, true);
-		const box = new THREE.Box3().setFromObject(body);
+		const box = visibleBounds();
 		const boxSize = box.getSize(new THREE.Vector3());
 		const centerY = (box.min.y + box.max.y) / 2;
 		const fov = (viewer.camera.fov * Math.PI) / 180;
