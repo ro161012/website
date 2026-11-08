@@ -23,7 +23,6 @@ async function start(el: HTMLCanvasElement) {
 	try {
 		hero = await initHero3D(el, {
 			skinUrl: `${base}assets/skin-texture.png`,
-			capeUrl: `${base}assets/cape.png`,
 			onGround: (ratio: number) => {
 				if (Number.isFinite(ratio)) figure.value?.style.setProperty('--ground', ratio.toFixed(4))
 			},

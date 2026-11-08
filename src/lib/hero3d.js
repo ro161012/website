@@ -4,16 +4,12 @@
  * Two pieces, both in model units (1 unit = 1/16 block, player is 32 tall):
  *   - the character: skinview3d's SkinViewer, standing still with its arms at
  *     its sides — no props, no animation, just the skin as it is in game
- *   - the cape: a cloth shell with real thickness, attached at the shoulder
- *     line, whose rows run through a damped spring
  *
  * `groundRatio()` reports where the feet land in canvas space, so the page can
  * draw its plinth line through them.
  *
  * three and skinview3d are vendored UMD bundles loaded on demand.
  */
-
-import { buildCape } from './cape.js';
 
 const ASSET_BASE = import.meta.env?.BASE_URL ?? "./";
 const THREE_SRC = `${ASSET_BASE}vendor/three/three.min.js`;
@@ -43,7 +39,7 @@ function loadScript(src) {
 	});
 }
 
-export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
+export async function initHero3D(canvas, { skinUrl, onGround }) {
 	await loadScript(THREE_SRC);
 	await loadScript(SKINVIEW_SRC);
 
@@ -51,7 +47,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	const skinview3d = window.skinview3d;
 	if (!THREE || !skinview3d) throw new Error('three / skinview3d did not register');
 
-	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	// The canvas is display:none until the first frame lands, so measuring it
 	// here would give 0x0 and leave the viewer stuck at its fallback size.
 	// Measure the figure instead: the fallback render is what defines the box.
@@ -89,17 +84,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	body.updateWorldMatrix(true, true);
 	const bounds = new THREE.Box3().setFromObject(body);
 	const size = bounds.getSize(new THREE.Vector3());
-
-	// Hang the cape off the torso itself: its top edge sits on the shoulder
-	// line and its inner face starts at the back of the chest, so it drops from
-	// the shoulders instead of floating up behind the head.
-	const torso = body.getObjectByName('body') || body;
-	torso.updateWorldMatrix(true, true);
-	const torsoBox = new THREE.Box3().setFromObject(torso);
-	const shoulder = new THREE.Vector3(0, torsoBox.max.y - 0.15, torsoBox.min.z + 0.05);
-	const cape = buildCape(THREE, capeUrl);
-	cape.mesh.position.copy(body.worldToLocal(shoulder));
-	body.add(cape.mesh);
 
 	const feet = new THREE.Vector3(0, bounds.min.y, 0);
 	const projected = new THREE.Vector3();
@@ -178,16 +162,13 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	const YAW_PER_PX = 0.008;
 	let yaw = 0;
 	let spin = 0;
-	let dragSpeed = 0;
 	let lastX = 0;
-	let lastT = 0;
 	let dragging = false;
 
 	const onDown = (event) => {
 		dragging = true;
 		spin = 0;
 		lastX = event.clientX;
-		lastT = performance.now();
 		canvas.classList.add('is-dragging');
 		try {
 			canvas.setPointerCapture(event.pointerId);
@@ -198,14 +179,10 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 
 	const onMove = (event) => {
 		if (!dragging) return;
-		const now = performance.now();
-		const dt = Math.max(16, now - lastT);
 		const dx = event.clientX - lastX;
 		yaw += dx * YAW_PER_PX;
 		spin = dx * YAW_PER_PX * 0.55;
-		dragSpeed = Math.min(6, (Math.abs(dx) / dt) * 12);
 		lastX = event.clientX;
-		lastT = now;
 	};
 
 	const onUp = () => {
@@ -226,7 +203,7 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 		}
 	});
 
-	/* ---- frame loop: cloth simulation ---- */
+	/* ---- frame loop: apply the yaw and let a released drag's spin decay ---- */
 	let last = performance.now();
 	let raf = 0;
 	const tick = (now) => {
@@ -237,8 +214,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 			spin *= Math.pow(0.02, dt);
 		}
 		viewer.playerWrapper.rotation.y = yaw;
-		cape.update(dt, now / 1000, dragSpeed, reduced ? 0.35 : 1);
-		dragSpeed *= Math.pow(0.04, dt);
 		raf = requestAnimationFrame(tick);
 	};
 	raf = requestAnimationFrame(tick);
@@ -259,7 +234,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 
 	return {
 		viewer,
-		cape,
 		resize,
 		fitCamera,
 		groundRatio,
