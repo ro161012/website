@@ -40,6 +40,7 @@ styles.css    layout + typography + CSS fallback
 main.js       boots LiquidGlass, Discord copy handler
 assets/       skin-body.png (posed render), skin-face.png (avatar + favicon), skin-texture.png (raw 64×64)
 assets/fonts  Monocraft.ttf + OFL.txt (SIL Open Font License 1.1)
+assets/cape.png  the cape texture from white.png (kept for reference, not drawn by the page)
 vendor/       liquidglass dist (patched once, see NOTICE.md)
 ```
 
