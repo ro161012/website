@@ -70,8 +70,7 @@ async function copyDiscord() {
 				<p class="eyebrow">Portfolio <span>MMXXVI</span></p>
 				<h1 class="wordmark">rxbow</h1>
 				<p class="lede">
-					Also known as <strong>{{ DISCORD_USERNAME }}</strong
-					>. Find me on TikTok, Discord, Steam, or by email.
+					Also known as <strong>{{ DISCORD_USERNAME }}</strong>.
 				</p>
 
 				<p class="dock-label">Elsewhere</p>
