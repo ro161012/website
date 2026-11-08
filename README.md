@@ -1,8 +1,9 @@
 # rxbow — portfolio
 
 A one-screen personal portfolio for **rxbow** (also known as **ro161012**): a
-Minecraft skin standing on white paper, with Apple-style liquid glass panels
-floating over it for the links.
+Minecraft skin holding a crossbow, standing on white paper, with Apple-style
+liquid glass panels floating over it for the links. Display type is Monocraft,
+the open Minecraft-style face; body copy is Instrument Sans.
 
 Live effects come from [`@ybouane/liquidglass`](https://github.com/ybouane/liquidglass)
 — real WebGL refraction, chromatic aberration, bevel rim and drop shadow, not a
@@ -37,7 +38,8 @@ module fails to initialise the page automatically falls back to a CSS frost.
 index.html    markup — #stage is the glass root, every .glass element is a direct child
 styles.css    layout + typography + CSS fallback
 main.js       boots LiquidGlass, Discord copy handler
-assets/       skin-body.png (full render), skin-face.png (avatar + favicon), skin-texture.png (raw 64×64)
+assets/       skin-body.png (posed render), skin-face.png (avatar + favicon), skin-texture.png (raw 64×64)
+assets/fonts  Monocraft.ttf + OFL.txt (SIL Open Font License 1.1)
 vendor/       liquidglass dist (patched once, see NOTICE.md)
 ```
 
@@ -65,12 +67,20 @@ The render is committed locally so the glass shader never touches a tainted canv
 UUID: e7ae0f55-4c6d-4610-a81a-e4c6250b1aa2   (ign: rxbow)
 ```
 
-To refresh after changing the skin in-game:
+The render is a posed 3D shot with a crossbow in the main hand, from the
+[mc-api](https://mc-api.bisai.dev/docs) v2 renderer (no key needed). Regenerate with:
 
 ```bash
-curl -L -o assets/skin-body.png "https://mc-heads.net/body/rxbow/512"
+UUID=e7ae0f554c6d4610a81ae4c6250b1aa2
+curl -o assets/skin-body.png \
+  "https://mc-api.bisai.dev/v1/render/3d/fullbody/$UUID?v=2&mainhand=crossbow&transparent=1&width=1024&height=2048"
 curl -L -o assets/skin-face.png "https://mc-heads.net/avatar/rxbow/256"
 ```
+
+The API frames the figure small in a 1024×2048 canvas — the committed asset is
+cropped to its transparent bounding box (344×534) so the hero is not mostly
+empty pixels. Swap `mainhand` for any item id, or add `template=archer`,
+`offhand=shield`, `playerRot=…` to change the pose.
 
 ## Glass tuning
 
@@ -94,6 +104,7 @@ Any static host works. For GitHub Pages: Settings → Pages → deploy from bran
 
 ## Credits
 
+- Display typeface: [Monocraft](https://github.com/IdreesInc/Monocraft) by Idrees Hassan (SIL OFL 1.1)
 - Liquid glass shader: [ybouane/liquidglass](https://github.com/ybouane/liquidglass) (MIT)
 - Design guidance: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (MIT)
-- Skin render: generated from the Minecraft account `rxbow` via mc-heads (texture from Mojang)
+- Skin render: [mc-api](https://mc-api.bisai.dev/docs) 3D render of the Minecraft account `rxbow` (texture from Mojang), posed with a crossbow
