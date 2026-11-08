@@ -1,12 +1,9 @@
 /**
- * hero3d.js — the live hero character, standing on the ground.
+ * hero3d.js — the live hero character, standing still.
  *
  * Two pieces, both in model units (1 unit = 1/16 block, player is 32 tall):
  *   - the character: skinview3d's SkinViewer, standing still with its arms at
  *     its sides — no props, no animation, just the skin as it is in game
- *
- * `groundRatio()` reports where the feet land in canvas space, so the page can
- * draw its plinth line through them.
  *
  * three and skinview3d are vendored UMD bundles loaded on demand.
  */
@@ -39,7 +36,7 @@ function loadScript(src) {
 	});
 }
 
-export async function initHero3D(canvas, { skinUrl, onGround }) {
+export async function initHero3D(canvas, { skinUrl }) {
 	await loadScript(THREE_SRC);
 	await loadScript(SKINVIEW_SRC);
 
@@ -63,30 +60,16 @@ export async function initHero3D(canvas, { skinUrl, onGround }) {
 	});
 
 	// Standing still: no animation is added, so the model keeps the in-game
-	// idle pose with its arms down.
-	viewer.controls.enableRotate = true;
-	viewer.controls.enableZoom = false;
-	viewer.controls.enablePan = false;
-	viewer.controls.minPolarAngle = 1.18;
-	viewer.controls.maxPolarAngle = 1.72;
+	// idle pose with its arms down. The controls stay off entirely — they turn
+	// the camera on bare pointer movement, so a cursor crossing the canvas would
+	// swing the figure, and a finger could not scroll the page over it.
+	viewer.controls.enabled = false;
 	viewer.zoom = 1;
 	viewer.autoRotate = false;
-	// The model turns only when it is dragged. skinview3d's controls rotate on
-	// bare pointer movement, which makes the camera drift whenever a cursor
-	// crosses the canvas, so they are switched off and the yaw is applied here.
-	viewer.controls.enabled = false;
 
 	const body = viewer.playerObject.skin || viewer.playerObject;
 
-	// Mount points are measured off the model rather than hardcoded: the player
-	// is 32 units tall but the group origin sits somewhere inside it, so the
-	// bbox gives the frame and the right-arm mesh gives the grip position.
 	body.updateWorldMatrix(true, true);
-	const bounds = new THREE.Box3().setFromObject(body);
-	const size = bounds.getSize(new THREE.Vector3());
-
-	const feet = new THREE.Vector3(0, bounds.min.y, 0);
-	const projected = new THREE.Vector3();
 
 	/**
 	 * The box the camera fits. A plain Box3 on the player includes the hidden
@@ -132,26 +115,6 @@ export async function initHero3D(canvas, { skinUrl, onGround }) {
 		viewer.camera.position.set(0, centerY + boxSize.y * 0.015, dist);
 		viewer.camera.lookAt(0, centerY, 0);
 		viewer.camera.updateProjectionMatrix();
-
-		feet.set(0, box.min.y, 0);
-		notifyGround();
-	}
-
-	/**
-	 * Report where the feet landed after the camera settles. Called from the fit
-	 * and on resize, so the page's plinth line never drifts from the soles.
-	 */
-	function notifyGround() {
-		if (!onGround) return;
-		requestAnimationFrame(() => requestAnimationFrame(() => onGround(groundRatio())));
-	}
-
-	/** Where the feet sit inside the canvas, 0 = top edge, 1 = bottom edge. */
-	function groundRatio() {
-		viewer.camera.updateMatrixWorld();
-		projected.copy(feet).project(viewer.camera);
-		const ratio = (1 - projected.y) / 2;
-		return Math.min(1.2, Math.max(0, ratio));
 	}
 
 	fitCamera();
@@ -176,7 +139,6 @@ export async function initHero3D(canvas, { skinUrl, onGround }) {
 		viewer,
 		resize,
 		fitCamera,
-		groundRatio,
 		destroy() {
 			observer.disconnect();
 			window.removeEventListener('resize', resize);
