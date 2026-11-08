@@ -59,6 +59,11 @@ export async function initHero3D(canvas, { skinUrl }) {
 		model: 'auto-detect',
 	});
 
+	// skinview3d pins touch-action: none on the canvas for its orbit controls.
+	// With those switched off it buys nothing and eats a phone finger swipe, so
+	// vertical page scrolling is handed back.
+	canvas.style.touchAction = 'pan-y';
+
 	// Standing still: no animation is added, so the model keeps the in-game
 	// idle pose with its arms down. The controls stay off entirely — they turn
 	// the camera on bare pointer movement, so a cursor crossing the canvas would
