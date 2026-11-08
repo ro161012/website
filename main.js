@@ -24,11 +24,58 @@ const glassElements = Array.from(stage.children).filter((el) => el.classList.con
 
 let glass = null;
 let toastTimer = 0;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/**
+ * Specular that follows the cursor.
+ *
+ * The shader lights the surface from two fixed directions, and its background
+ * raster is only re-shot when something marks it dirty — so a highlight that
+ * has to track the pointer cannot come from the shader. It is a pseudo-element
+ * painted above the canvas instead, positioned by these two custom properties.
+ * The library's observer only watches `data-config`, so writing --mx/--my
+ * never triggers a re-capture.
+ */
+function trackSpecular(el) {
+	let frame = 0;
+	let x = 50;
+	let y = 0;
+
+	const paint = () => {
+		frame = 0;
+		el.style.setProperty('--mx', `${x}%`);
+		el.style.setProperty('--my', `${y}%`);
+	};
+
+	const queue = () => {
+		if (!frame) frame = requestAnimationFrame(paint);
+	};
+
+	el.addEventListener('pointermove', (event) => {
+		const box = el.getBoundingClientRect();
+		if (!box.width || !box.height) return;
+		x = ((event.clientX - box.left) / box.width) * 100;
+		y = ((event.clientY - box.top) / box.height) * 100;
+		queue();
+	});
+
+	el.addEventListener('pointerleave', () => {
+		x = 50;
+		y = 0;
+		queue();
+	});
+}
+
+if (!reduceMotion.matches) {
+	for (const el of glassElements) trackSpecular(el);
+}
 
 function showToast(message) {
 	if (!toast) return;
 	toast.textContent = message;
 	toast.classList.add('is-visible');
+	// panel content is baked into its texture, so a text swap needs a repaint
+	glass?.markChanged(toast);
 	window.clearTimeout(toastTimer);
 	toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2200);
 }

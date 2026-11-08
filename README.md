@@ -149,9 +149,12 @@ is built rather than fetched.
 
 Three things do the work, and all three matter:
 
-1. **Moving colour behind it** — `.scene__blob` elements drift on 17-31s loops
-   (`@keyframes drift`). The shader samples those pixels every frame, so a
-   static backdrop reads as frosted plastic while a moving one reads as liquid.
+1. **Colour behind it, not white** — `.scene` paints drifting blobs, a dot grid
+   and an oversized wordmark. The library rasterises that layer at init and
+   again whenever a panel moves or resizes (its render loop is gated on a dirty
+   flag, not run against a live DOM every frame), so what the shader bends is
+   colour and letterforms instead of flat white. Refraction is only legible if
+   there is something with edges and contrast to bend.
 2. **Refraction without haze** — the pills run `refraction` 0.86 and the nav
    0.84, while `blurAmount` drops to 0.14 / 0.12: real glass bends its
    surroundings but does not fog them. `chromAberration` 0.06 splits colour at
@@ -161,6 +164,25 @@ Three things do the work, and all three matter:
    so the rim brightens as the panel turns away and the highlight travels.
    `saturation` 0.14 keeps the colour behind the glass alive instead of
    greying it out, which is the usual tell of a CSS backdrop-filter fake.
+
+## Interface surfaces
+
+Every surface is glass: the nav, the four dock pills and the toast. The toast
+lives inside `#stage` for exactly that reason — a direct child carrying `.glass`
+is all the library asks for. `border-radius` in CSS has to match `cornerRadius`
+in the panel's `data-config` (28 nav, 26 pills, 18 toast) or the shader's rim and
+the DOM box disagree at the corners.
+
+The highlight that follows the pointer is a `::after` layer driven by `--mx` /
+`--my`. It cannot come from the shader: the shader lights the surface from two
+fixed directions, and its backdrop is only re-shot on a dirty mark. So it is
+painted instead, at `z-index:-1` — above the injected canvas (also -1, earlier in
+`tree order) and below the panel's own text. The library observes only
+`data-config`, so writing those custom properties never costs a re-capture, and
+`prefers-reduced-motion` skips the tracking altogether.
+
+One accent (`--accent`, teal) is used only where something is interactive: the
+focus ring and the icon on hover. Everything else stays ink-on-white.
 
 Tune live from the console: `rxbowGlass.markChanged()` repaints after you edit a
 panel's `data-config` in the DOM; `rxbowHero` is the 3D viewer handle.

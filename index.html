@@ -172,9 +172,17 @@
 			</a>
 
 			<p class="signature">rxbow &middot; mmxxvi</p>
-		</main>
 
-		<div class="toast" id="toast" role="status" aria-live="polite"></div>
+			<!-- Inside #stage so it is part of the glass system: a direct child
+			     with .glass is all the library needs. -->
+			<div
+				class="toast glass"
+				id="toast"
+				role="status"
+				aria-live="polite"
+				data-config='{"cornerRadius":18,"zRadius":14,"blurAmount":0.10,"refraction":0.88,"chromAberration":0.05,"edgeHighlight":0.26,"specular":0.60,"fresnel":0.92,"distortion":0.5,"opacity":0.94,"saturation":0.12,"brightness":0.01,"shadowOpacity":0.18,"shadowSpread":16,"shadowOffsetY":6}'
+			></div>
+		</main>
 
 		<script type="module" src="main.js"></script>
 	</body>

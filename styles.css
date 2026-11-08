@@ -17,6 +17,8 @@
 :root {
 	--paper: #ffffff;
 	--ink: #101010;
+	/* one accent, used only where something is interactive */
+	--accent: #0e9f95;
 	--ink-soft: #6b6862;
 	--ink-faint: rgba(16, 16, 16, 0.08);
 	--teal: #16a89e;
@@ -357,7 +359,9 @@ canvas.hero__skin.is-dragging {
 	align-items: center;
 	gap: 13px;
 	padding: 0 20px;
-	border-radius: 24px;
+	/* must equal cornerRadius in the panel's data-config, or the shader's rim
+	   and the DOM box disagree at the corners */
+	border-radius: 26px;
 	text-decoration: none;
 	color: var(--ink);
 	font: inherit;
@@ -423,15 +427,58 @@ canvas.hero__skin.is-dragging {
 }
 
 .pill:focus-visible {
-	outline: 2px solid var(--ink);
+	outline: 2px solid var(--accent);
 	outline-offset: 4px;
+}
+
+.pill:hover .pill__icon,
+.pill:focus-visible .pill__icon {
+	color: var(--accent);
+}
+
+.pill__icon {
+	transition: color 240ms ease;
 }
 
 /* injected shader canvas sits above the DOM content — keep rim/edge clean */
 .pill > canvas,
-.nav > canvas {
+.nav > canvas,
+.toast > canvas {
 	border-radius: inherit;
 }
+
+/* ---------------------------------------------- live glass surface
+   The shader's specular comes from two fixed lights and its background raster
+   is only re-shot when something marks it dirty, so anything that should
+   follow the pointer has to be painted, not sampled. ::after is generated as
+   the last box in the element, so at z-index:-1 it lands above the injected
+   shader canvas (also -1, earlier in tree order) and below the panel's text. */
+
+.glass::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	pointer-events: none;
+	/* hairline rim + the specular that tracks the cursor */
+	box-shadow:
+		inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+		inset 0 1px 0 rgba(255, 255, 255, 0.85);
+	background: radial-gradient(
+		170px 170px at var(--mx, 50%) var(--my, 0%),
+		rgba(255, 255, 255, 0.5),
+		rgba(255, 255, 255, 0) 70%
+	);
+	opacity: 0.35;
+	transition: opacity 420ms ease;
+}
+
+.glass:hover::after,
+.glass:focus-visible::after {
+	opacity: 0.9;
+}
+
 
 /* Oversized baseline wordmark behind the dock — gives the glass real
    letters to refract instead of flat white. */
@@ -470,17 +517,29 @@ canvas.hero__skin.is-dragging {
 	bottom: 26px;
 	translate: -50% 12px;
 	z-index: 90;
-	padding: 9px 16px;
-	border-radius: 999px;
-	background: rgba(16, 16, 16, 0.92);
-	color: #fff;
+	padding: 9px 18px;
+	/* matches cornerRadius 18 in its data-config */
+	border-radius: 18px;
+	color: var(--ink);
 	font-size: 12px;
 	letter-spacing: 0.02em;
+	white-space: nowrap;
 	opacity: 0;
 	pointer-events: none;
+	/* the shader paints the surface; this is what shows until it is live */
+	background: rgba(255, 255, 255, 0.72);
 	transition:
 		opacity 260ms ease,
 		translate 260ms ease;
+}
+
+[data-glass='on'] .toast {
+	background: none;
+}
+
+.no-glass .toast,
+html:not(.js) .toast {
+	color: var(--ink);
 }
 
 .toast.is-visible {
