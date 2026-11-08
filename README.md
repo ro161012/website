@@ -68,20 +68,25 @@ The render is committed locally so the glass shader never touches a tainted canv
 UUID: e7ae0f55-4c6d-4610-a81a-e4c6250b1aa2   (ign: rxbow)
 ```
 
-The render is a posed 3D shot with a crossbow in the main hand, from the
+The render is a posed 3D shot with a loaded crossbow held up, from the
 [mc-api](https://mc-api.bisai.dev/docs) v2 renderer (no key needed). Regenerate with:
 
 ```bash
 UUID=e7ae0f554c6d4610a81ae4c6250b1aa2
 curl -o assets/skin-body.png \
-  "https://mc-api.bisai.dev/v1/render/3d/fullbody/$UUID?v=2&mainhand=crossbow&transparent=1&width=1024&height=2048"
-curl -L -o assets/skin-face.png "https://mc-heads.net/avatar/rxbow/256"
+  "https://mc-api.bisai.dev/v1/render/3d/fullbody/$UUID?v=2&transparent=1&width=1024&height=2048\
+&mainhand=crossbow&rightArm=-82,0,8&leftArm=-74,0,-6&head=-6,0,0&camera=30,8,0"
+# avatar: composited from the head pixels of assets/skin-texture.png
 ```
 
 The API frames the figure small in a 1024×2048 canvas — the committed asset is
-cropped to its transparent bounding box (344×534) so the hero is not mostly
-empty pixels. Swap `mainhand` for any item id, or add `template=archer`,
-`offhand=shield`, `playerRot=…` to change the pose.
+cropped tightly and centred on the character's body axis (481×546) rather than on
+the transparent bounding box, so the body sits on the page centre while the
+crossbow overhangs to one side. `camera=yaw,pitch,roll,distance` sets the view
+angle; `mainhand` takes any item id, and `template=archer`, `offhand=shield`,
+`playerRot=…` change the stance. Only the standby crossbow model renders —
+`crossbow_charged`, `crossbow_pulling_1/2` and `crossbow_loaded` are silently
+dropped, so the loaded read comes from the raised aiming pose.
 
 ## Glass tuning
 
