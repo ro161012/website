@@ -95,6 +95,13 @@ a {
 	opacity: 0.85;
 }
 
+/* the link tiles hold a fixed highlight: nothing about them moves on hover.
+   The compound selector ties specificity with the :hover rule above and, being
+   later in the sheet, wins — so the sheen never brightens. */
+.glass-panel.pill::after {
+	opacity: 0.3;
+}
+
 /* ---------------------------------------------- page shell */
 
 .page {
@@ -269,8 +276,7 @@ a {
 
 /* ---------------------------------------------- link tiles */
 
-/* --s / --lift are sprung by src/lib/dockMagnify.ts from the pointer's distance
-   to each tile, so the row magnifies like an iOS dock. */
+/* The tiles are static: they neither grow, lift, dip on press, nor recolour. */
 .dock-label {
 	display: flex;
 	align-items: center;
@@ -301,13 +307,6 @@ a {
 
 .pill {
 	height: var(--tile-h);
-	transform-origin: 50% 88%;
-	transform: translateY(var(--lift, 0px)) scale(var(--s, 1));
-	will-change: transform;
-}
-
-.pill:active {
-	scale: 0.985;
 }
 
 .pill__hit {
@@ -342,19 +341,12 @@ a {
 	height: 20px;
 	color: var(--ink);
 	opacity: 0.82;
-	transition: color 240ms ease;
 }
 
 .pill__icon svg {
 	display: block;
 	width: 19px;
 	height: 19px;
-}
-
-.pill:hover .pill__icon,
-.pill:focus-within .pill__icon {
-	color: var(--accent);
-	opacity: 1;
 }
 
 .pill__text {

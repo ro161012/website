@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import GlassPanel from './components/GlassPanel.vue'
 import HeroFigure from './components/HeroFigure.vue'
 import LinkPill from './components/LinkPill.vue'
-import { initDockMagnify } from './lib/dockMagnify'
 
 const base = import.meta.env.BASE_URL
 const DISCORD_USERNAME = 'ro161012'
 
 const dock = ref<HTMLElement | null>(null)
-let dockMagnify: { destroy: () => void } | null = null
 
 const toast = ref('')
 const toastVisible = ref(false)
@@ -22,13 +20,8 @@ function showToast(message: string) {
 	timer = window.setTimeout(() => (toastVisible.value = false), 2200)
 }
 
-onMounted(() => {
-	if (dock.value) dockMagnify = initDockMagnify(dock.value)
-})
-
 onBeforeUnmount(() => {
 	window.clearTimeout(timer)
-	dockMagnify?.destroy()
 })
 
 async function copyDiscord() {
