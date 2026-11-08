@@ -16,8 +16,9 @@
  * empty hero.
  */
 
-const THREE_SRC = './vendor/three/three.min.js';
-const SKINVIEW_SRC = './vendor/skinview3d/skinview3d.bundle.js';
+const ASSET_BASE = import.meta.env?.BASE_URL ?? "./";
+const THREE_SRC = `${ASSET_BASE}vendor/three/three.min.js`;
+const SKINVIEW_SRC = `${ASSET_BASE}vendor/skinview3d/skinview3d.bundle.js`;
 
 /* Cape texture: the cape occupies pixels (1,1)-(10,16) of a 64x32 sheet.
    Texture v runs bottom-up with flipY, hence the inversion. */

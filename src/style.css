@@ -1,14 +1,8 @@
-/* =========================================================
-   rxbow — liquid glass portfolio
-   Layout contract for @ybouane/liquidglass:
-   - #stage is the positioned root
-   - every .glass element is a DIRECT child of #stage
-   - the white canvas lives in .scene (a sibling), never on the root
-   ========================================================= */
+@import 'tailwindcss';
 
 @font-face {
 	font-family: 'Monocraft';
-	src: url('assets/fonts/Monocraft.ttf') format('truetype');
+	src: url('./assets/fonts/Monocraft.ttf') format('truetype');
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
@@ -17,18 +11,18 @@
 :root {
 	--paper: #ffffff;
 	--ink: #101010;
-	/* one accent, used only where something is interactive */
-	--accent: #0e9f95;
 	--ink-soft: #6b6862;
-	--ink-faint: rgba(16, 16, 16, 0.08);
+	--accent: #0e9f95;
 	--teal: #16a89e;
 	--indigo: #33329b;
 
 	--font-ui: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 	--font-display: 'Monocraft', ui-monospace, 'Courier New', monospace;
-	--font-pixel: 'Monocraft', ui-monospace, 'Courier New', monospace;
 
-	/* dock geometry */
+	/* geometry of the reference components */
+	--glass-rgb: #ffffff;
+	--glass-bg-alpha: 55%;
+
 	--pw: 212px;
 	--pill-h: 70px;
 	--pgap: 14px;
@@ -48,16 +42,11 @@ html,
 body {
 	margin: 0;
 	padding: 0;
-}
-
-body {
 	background: var(--paper);
 	color: var(--ink);
 	font-family: var(--font-ui);
-	font-synthesis-weight: none;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	text-rendering: optimizeLegibility;
 	overflow-x: hidden;
 }
 
@@ -67,6 +56,51 @@ a {
 
 ::selection {
 	background: rgba(22, 168, 158, 0.2);
+}
+
+/* ---------------------------------------------- glass surface */
+
+.glass-panel {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.55);
+	box-shadow:
+		0 1px 1px rgba(16, 16, 16, 0.05),
+		0 14px 34px rgba(16, 16, 16, 0.11);
+	/* the filter refracts the backdrop; this is what shows outside Chromium */
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.glass-panel__body {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+}
+
+/* specular that follows the cursor; the baked map only lights one angle */
+.glass-panel::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	border-radius: inherit;
+	background: radial-gradient(
+		170px 170px at var(--mx, 50%) var(--my, 0%),
+		rgba(255, 255, 255, 0.5),
+		rgba(255, 255, 255, 0) 70%
+	);
+	opacity: 0.35;
+	transition: opacity 420ms ease;
+}
+
+.glass-panel:hover::after,
+.glass-panel:focus-within::after {
+	opacity: 0.9;
 }
 
 /* ---------------------------------------------- stage + scene */
@@ -98,9 +132,6 @@ a {
 	border-radius: 50%;
 	filter: blur(60px);
 	opacity: 0.5;
-	/* Slow drift: the glass samples this layer every frame, so holding still
-	   would make the panels read as static frost. Moving colour behind them is
-	   what sells them as liquid. */
 	animation: drift 26s ease-in-out infinite alternate;
 	will-change: transform;
 }
@@ -159,25 +190,34 @@ a {
 	mask-image: radial-gradient(115% 85% at 50% 45%, #000 20%, transparent 78%);
 }
 
+/* Oversized baseline wordmark behind the dock: gives the glass real letters to
+   refract instead of flat white. */
+.scene__band {
+	position: absolute;
+	left: 50%;
+	translate: -50% 0;
+	bottom: calc(var(--dock-b) - 0.34em);
+	font-family: var(--font-display);
+	font-size: clamp(64px, 8.6vw, 122px);
+	line-height: 1;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	color: rgba(16, 16, 16, 0.09);
+}
+
 /* ---------------------------------------------- nav */
 
 .nav {
 	position: absolute;
 	top: clamp(16px, 2.6vh, 28px);
-	left: 0;
-	right: 0;
-	margin-inline: auto;
+	left: 50%;
+	translate: -50% 0;
 	z-index: 30;
-	display: flex;
-	align-items: center;
-	gap: 14px;
 	width: max-content;
 	max-width: calc(100vw - 28px);
 	height: 54px;
 	padding: 0 20px;
-	border-radius: 28px;
 	font-size: 13px;
-	letter-spacing: 0.01em;
 	white-space: nowrap;
 }
 
@@ -228,10 +268,10 @@ a {
 	margin-top: calc(var(--wordmark) * -0.3);
 	display: flex;
 	justify-content: center;
+	pointer-events: auto;
 	animation: rise 1100ms cubic-bezier(0.2, 0.7, 0.2, 1) 140ms both;
 }
 
-/* soft grounding shadow under the character */
 .hero__figure::after {
 	content: '';
 	position: absolute;
@@ -255,35 +295,17 @@ a {
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-user-drag: none;
-}
-
-/* the live model: drag surface, and hidden until WebGL has drawn a frame */
-canvas.hero__skin {
-	display: none;
 	touch-action: none;
 	cursor: grab;
 }
 
-.has-3d canvas.hero__skin {
-	display: block;
-}
-
-canvas.hero__skin.is-dragging {
+.hero__skin.is-dragging {
 	cursor: grabbing;
 }
 
-/* the pre-rendered PNG: the fallback, and what shows while three.js loads */
 .hero__skin--img {
 	width: auto;
 	image-rendering: pixelated;
-}
-
-.has-3d .hero__skin--img {
-	display: none;
-}
-
-.no-3d canvas.hero__skin {
-	display: none;
 }
 
 .hero__hint {
@@ -292,37 +314,32 @@ canvas.hero__skin.is-dragging {
 	bottom: -2px;
 	translate: -50% 0;
 	margin: 0;
-	font-family: var(--font-pixel);
+	font-family: var(--font-display);
 	font-size: 8px;
 	letter-spacing: 0.22em;
 	text-transform: uppercase;
 	color: rgba(16, 16, 16, 0.34);
 	white-space: nowrap;
 	pointer-events: none;
-	opacity: 0;
-	transition: opacity 400ms ease;
-}
-
-/* only meaningful once there is a model to drag */
-.has-3d .hero__hint {
-	opacity: 1;
 	animation: hint-pulse 4.5s ease-in-out infinite;
 }
 
-.no-3d .hero__hint {
-	display: none;
-}
-
 @keyframes hint-pulse {
-	0%, 70%, 100% { opacity: 0.38; }
-	85% { opacity: 0.75; }
+	0%,
+	70%,
+	100% {
+		opacity: 0.38;
+	}
+	85% {
+		opacity: 0.75;
+	}
 }
 
 .hero__aka {
 	position: relative;
 	z-index: 2;
 	margin: clamp(9px, 1.5vh, 15px) 0 0;
-	font-family: var(--font-pixel);
+	font-family: var(--font-display);
 	font-size: clamp(8px, 0.72vw, 9.5px);
 	letter-spacing: 0.2em;
 	text-transform: uppercase;
@@ -346,35 +363,57 @@ canvas.hero__skin.is-dragging {
 	}
 }
 
-/* ---------------------------------------------- glass pills */
+/* ---------------------------------------------- dock */
+
+.dock {
+	position: absolute;
+	left: 50%;
+	translate: -50% 0;
+	bottom: var(--dock-b);
+	z-index: 20;
+	display: flex;
+	gap: var(--pgap);
+}
 
 .pill {
-	position: absolute;
-	bottom: var(--dock-b);
-	left: calc(50% + (var(--i) - 1.5) * (var(--pw) + var(--pgap)) - var(--pw) / 2);
-	z-index: 20;
 	width: var(--pw);
 	height: var(--pill-h);
+	transition:
+		translate 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+		scale 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pill:hover {
+	translate: 0 -3px;
+}
+
+.pill:active {
+	translate: 0 0;
+	scale: 0.985;
+}
+
+.pill__hit {
 	display: flex;
 	align-items: center;
 	gap: 13px;
+	width: 100%;
+	height: 100%;
 	padding: 0 20px;
-	/* must equal cornerRadius in the panel's data-config, or the shader's rim
-	   and the DOM box disagree at the corners */
-	border-radius: 26px;
-	text-decoration: none;
 	color: var(--ink);
+	text-decoration: none;
 	font: inherit;
 	text-align: left;
 	background: none;
 	border: 0;
 	cursor: pointer;
+	outline-offset: 4px;
 	-webkit-appearance: none;
 	appearance: none;
 	-webkit-tap-highlight-color: transparent;
-	transition:
-		translate 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
-		scale 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pill__hit:focus-visible {
+	outline: 2px solid var(--accent);
 }
 
 .pill__icon {
@@ -385,12 +424,18 @@ canvas.hero__skin.is-dragging {
 	place-items: center;
 	color: var(--ink);
 	opacity: 0.9;
+	transition: color 240ms ease;
 }
 
 .pill__icon svg {
 	width: 20px;
 	height: 20px;
 	display: block;
+}
+
+.pill:hover .pill__icon,
+.pill:focus-within .pill__icon {
+	color: var(--accent);
 }
 
 .pill__text {
@@ -417,94 +462,32 @@ canvas.hero__skin.is-dragging {
 	text-overflow: ellipsis;
 }
 
-.pill:hover {
-	translate: 0 -3px;
-}
+/* ---------------------------------------------- toast */
 
-.pill:active {
-	translate: 0 0;
-	scale: 0.985;
-}
-
-.pill:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 4px;
-}
-
-.pill:hover .pill__icon,
-.pill:focus-visible .pill__icon {
-	color: var(--accent);
-}
-
-.pill__icon {
-	transition: color 240ms ease;
-}
-
-/* injected shader canvas sits above the DOM content — keep rim/edge clean */
-.pill > canvas,
-.nav > canvas,
-.toast > canvas {
-	border-radius: inherit;
-}
-
-/* ---------------------------------------------- SVG glass (Chromium)
-   The displacement filter refracts the live backdrop, so no rasterised
-   snapshot can go stale. Everything else about the surface stays the same. */
-
-.has-svg-glass .glass {
-	overflow: hidden;
-	border: 1px solid rgba(255, 255, 255, 0.55);
-	box-shadow:
-		0 1px 1px rgba(16, 16, 16, 0.05),
-		0 14px 34px rgba(16, 16, 16, 0.11);
-}
-
-/* ---------------------------------------------- live glass surface
-   The shader's specular comes from two fixed lights and its background raster
-   is only re-shot when something marks it dirty, so anything that should
-   follow the pointer has to be painted, not sampled. ::after is generated as
-   the last box in the element, so at z-index:-1 it lands above the injected
-   shader canvas (also -1, earlier in tree order) and below the panel's text. */
-
-.glass::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	border-radius: inherit;
-	pointer-events: none;
-	/* hairline rim + the specular that tracks the cursor */
-	box-shadow:
-		inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-		inset 0 1px 0 rgba(255, 255, 255, 0.85);
-	background: radial-gradient(
-		170px 170px at var(--mx, 50%) var(--my, 0%),
-		rgba(255, 255, 255, 0.5),
-		rgba(255, 255, 255, 0) 70%
-	);
-	opacity: 0.35;
-	transition: opacity 420ms ease;
-}
-
-.glass:hover::after,
-.glass:focus-visible::after {
-	opacity: 0.9;
-}
-
-
-/* Oversized baseline wordmark behind the dock — gives the glass real
-   letters to refract instead of flat white. */
-.scene__band {
-	position: absolute;
+.toast {
+	position: fixed;
 	left: 50%;
+	bottom: 26px;
+	translate: -50% 12px;
+	z-index: 90;
+	width: max-content;
+	padding: 9px 18px;
+	font-size: 12px;
+	letter-spacing: 0.02em;
+	opacity: 0;
+	pointer-events: none;
+	transition:
+		opacity 260ms ease,
+		translate 260ms ease;
+}
+
+.toast.is-visible {
+	opacity: 1;
 	translate: -50% 0;
-	bottom: calc(var(--dock-b) - 0.34em);
-	font-family: var(--font-display);
-	font-size: clamp(64px, 8.6vw, 122px);
-	line-height: 1;
-	letter-spacing: 0.01em;
+}
+
+.toast__text {
 	white-space: nowrap;
-	color: rgba(16, 16, 16, 0.09);
 }
 
 .signature {
@@ -513,69 +496,12 @@ canvas.hero__skin.is-dragging {
 	bottom: 10px;
 	margin: 0;
 	z-index: 5;
-	font-family: var(--font-pixel);
+	font-family: var(--font-display);
 	font-size: 8px;
 	letter-spacing: 0.2em;
 	text-transform: uppercase;
 	color: rgba(16, 16, 16, 0.26);
 	pointer-events: none;
-}
-
-/* ---------------------------------------------- copy toast */
-
-.toast {
-	position: fixed;
-	left: 50%;
-	bottom: 26px;
-	translate: -50% 12px;
-	z-index: 90;
-	padding: 9px 18px;
-	/* matches cornerRadius 18 in its data-config */
-	border-radius: 18px;
-	color: var(--ink);
-	font-size: 12px;
-	letter-spacing: 0.02em;
-	white-space: nowrap;
-	opacity: 0;
-	pointer-events: none;
-	/* the shader paints the surface; this is what shows until it is live */
-	background: rgba(255, 255, 255, 0.72);
-	transition:
-		opacity 260ms ease,
-		translate 260ms ease;
-}
-
-[data-glass='on'] .toast {
-	background: none;
-}
-
-.no-glass .toast,
-html:not(.js) .toast {
-	color: var(--ink);
-}
-
-.toast.is-visible {
-	opacity: 1;
-	translate: -50% 0;
-}
-
-/* ---------------------------------------------- CSS-only fallback
-   Used before init finishes, and if WebGL is unavailable. */
-html:not(.js) .glass,
-.no-glass .glass {
-	background: rgba(255, 255, 255, 0.55);
-	-webkit-backdrop-filter: blur(18px) saturate(160%);
-	backdrop-filter: blur(18px) saturate(160%);
-	border: 1px solid rgba(255, 255, 255, 0.85);
-	box-shadow:
-		0 1px 1px rgba(16, 16, 16, 0.04),
-		0 12px 30px rgba(16, 16, 16, 0.1),
-		inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-html:not(.js) .pill,
-.no-glass .pill {
-	background: rgba(255, 255, 255, 0.62);
 }
 
 /* ---------------------------------------------- responsive */
@@ -589,9 +515,13 @@ html:not(.js) .pill,
 		--skin-h: clamp(230px, 34svh, 360px);
 	}
 
-	.pill {
-		left: calc(50% + (var(--col) - 0.5) * (var(--pw) + var(--pgap)) - var(--pw) / 2);
-		bottom: calc(var(--dock-b) + (1 - var(--row)) * (var(--pill-h) + var(--pgap)));
+	.dock {
+		display: grid;
+		grid-template-columns: repeat(2, var(--pw));
+		gap: var(--pgap);
+	}
+
+	.pill__hit {
 		padding: 0 16px;
 		gap: 11px;
 	}
@@ -603,7 +533,6 @@ html:not(.js) .pill,
 	.nav {
 		height: 48px;
 		padding: 0 16px;
-		gap: 11px;
 		font-size: 12px;
 	}
 
@@ -624,10 +553,8 @@ html:not(.js) .pill,
 	.hero {
 		padding-inline: 16px;
 	}
-
 }
 
-/* short desktop windows */
 @media (min-width: 901px) and (max-height: 760px) {
 	:root {
 		--wordmark: clamp(56px, 8.8vw, 116px);
