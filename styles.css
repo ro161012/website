@@ -297,18 +297,16 @@ canvas.hero__skin.is-dragging {
 	color: rgba(16, 16, 16, 0.34);
 	white-space: nowrap;
 	pointer-events: none;
+	opacity: 0;
 	transition: opacity 400ms ease;
 }
 
+/* only meaningful once there is a model to drag */
 .has-3d .hero__hint {
 	opacity: 1;
-}
-
-.hero__figure:not(.is-dragging) .hero__hint {
 	animation: hint-pulse 4.5s ease-in-out infinite;
 }
 
-.hero__skin:not(.has-3d) ~ .hero__hint,
 .no-3d .hero__hint {
 	display: none;
 }
