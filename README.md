@@ -114,3 +114,49 @@ Any static host works. For GitHub Pages: Settings → Pages → deploy from bran
 - Liquid glass shader: [ybouane/liquidglass](https://github.com/ybouane/liquidglass) (MIT)
 - Design guidance: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) (MIT)
 - Skin render: [mc-api](https://mc-api.bisai.dev/docs) 3D render of the Minecraft account `rxbow` (texture from Mojang), posed with a crossbow
+
+## The 3D hero (`hero3d.js`)
+
+The hero is a live model, not a picture: drag it and you can see the character
+from every side, `←`/`→` spin it from the keyboard, and an idle drift takes over
+again a few seconds after you let go.
+
+Everything below is vendored, so nothing depends on a CDN at runtime:
+
+```
+vendor/three/three.min.js              three.js r156 (UMD global THREE)
+vendor/skinview3d/skinview3d.bundle.js skinview3d 3.4.2 (needs the THREE global)
+```
+
+They are injected on demand by `hero3d.js`, after the page has loaded. If either
+fails — or WebGL is unavailable — the module throws, `main.js` puts `no-3d` on
+`#stage`, and the pre-rendered `assets/skin-body.png` stays visible. Until the
+first frame lands the PNG is the fallback, so the hero is never blank.
+
+The cape is **not** skinview3d's cape: that one is a rigid plane. `buildCape()`
+builds a 6x12 grid mapped to the cape pixels at (1,1)-(10,16) of the texture and
+runs each row through a damped spring, so it trails when you spin the model and
+settles afterwards. Drag velocity feeds the springs; the hem is clamped so a
+flick cannot turn it into a sail. `prefers-reduced-motion` drops the wind to a
+third and disables the idle spin, but dragging still works.
+
+The crossbow is box geometry (stock, grip, limbs, drawn string, loaded bolt)
+attached to the measured right-arm grip position — skinview3d has no item
+support, and mc-api only renders the standby crossbow model, so the loaded look
+is built rather than fetched.
+
+## Making the glass read as liquid
+
+Three things do the work, and all three matter:
+
+1. **Moving colour behind it** — `.scene__blob` elements drift on 17-31s loops
+   (`@keyframes drift`). The shader samples those pixels every frame, so a
+   static backdrop reads as frosted plastic while a moving one reads as liquid.
+2. **Stronger refraction** — the pills run `refraction` 0.80 and the nav 0.78
+   (was 0.60 / 0.55), with `chromAberration` up to 0.05 for the colour split at
+   the edges.
+3. **Edge response** — `edgeHighlight` 0.22, `specular` 0.50 and `fresnel` 0.90,
+   so the rim brightens as the panel turns away and the highlight travels.
+
+Tune live from the console: `rxbowGlass.markChanged()` repaints after you edit a
+panel's `data-config` in the DOM; `rxbowHero` is the 3D viewer handle.

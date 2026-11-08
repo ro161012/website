@@ -49,7 +49,7 @@
 
 			<header
 				class="nav glass"
-				data-config='{"cornerRadius":28,"zRadius":18,"blurAmount":0.10,"refraction":0.55,"chromAberration":0.03,"edgeHighlight":0.14,"specular":0.30,"fresnel":0.75,"opacity":0.94,"tintStrength":0.07,"shadowOpacity":0.12,"shadowSpread":16,"shadowOffsetY":6}'
+				data-config='{"cornerRadius":28,"zRadius":20,"blurAmount":0.16,"refraction":0.78,"chromAberration":0.045,"edgeHighlight":0.20,"specular":0.46,"fresnel":0.88,"opacity":0.90,"tintStrength":0.08,"shadowOpacity":0.14,"shadowSpread":18,"shadowOffsetY":7}'
 			>
 				<span class="nav__brand">
 					<img class="nav__face" src="assets/skin-face.png" alt="" width="24" height="24" />
@@ -61,14 +61,21 @@
 				<h1 class="hero__wordmark">rxbow</h1>
 
 				<div class="hero__figure">
-					<img
+					<canvas
 						class="hero__skin"
+						id="hero-3d"
+						role="img"
+						aria-label="rxbow in 3D, holding a loaded crossbow. Drag to turn the model."
+					></canvas>
+					<img
+						class="hero__skin hero__skin--img"
 						src="assets/skin-body.png"
 						alt="Minecraft skin of rxbow aiming a loaded crossbow, on a white background"
 						width="481"
 						height="546"
 						decoding="async"
 					/>
+					<p class="hero__hint" aria-hidden="true">drag to turn</p>
 				</div>
 
 				<p class="hero__aka">also known as <span>ro161012</span></p>
@@ -81,7 +88,7 @@
 				href="https://www.tiktok.com/@rxbowed"
 				target="_blank"
 				rel="me noopener noreferrer"
-				data-config='{"cornerRadius":24,"zRadius":16,"blurAmount":0.12,"refraction":0.60,"chromAberration":0.04,"edgeHighlight":0.14,"specular":0.40,"fresnel":0.70,"opacity":0.93,"tintStrength":0.06,"shadowOpacity":0.16,"shadowSpread":18,"shadowOffsetY":8,"button":true}'
+				data-config='{"cornerRadius":26,"zRadius":20,"blurAmount":0.18,"refraction":0.80,"chromAberration":0.05,"edgeHighlight":0.22,"specular":0.50,"fresnel":0.90,"opacity":0.90,"tintStrength":0.09,"shadowOpacity":0.18,"shadowSpread":22,"shadowOffsetY":9,"button":true}'
 			>
 				<span class="pill__icon" aria-hidden="true">
 					<svg viewBox="0 0 24 24" role="presentation">
@@ -103,7 +110,7 @@
 				type="button"
 				style="--i: 1; --col: 1; --row: 0"
 				aria-label="Copy Discord username ro161012"
-				data-config='{"cornerRadius":24,"zRadius":16,"blurAmount":0.12,"refraction":0.60,"chromAberration":0.04,"edgeHighlight":0.14,"specular":0.40,"fresnel":0.70,"opacity":0.93,"tintStrength":0.06,"shadowOpacity":0.16,"shadowSpread":18,"shadowOffsetY":8,"button":true}'
+				data-config='{"cornerRadius":26,"zRadius":20,"blurAmount":0.18,"refraction":0.80,"chromAberration":0.05,"edgeHighlight":0.22,"specular":0.50,"fresnel":0.90,"opacity":0.90,"tintStrength":0.09,"shadowOpacity":0.18,"shadowSpread":22,"shadowOffsetY":9,"button":true}'
 			>
 				<span class="pill__icon" aria-hidden="true">
 					<svg viewBox="0 0 24 24" role="presentation">
@@ -126,7 +133,7 @@
 				href="https://steamcommunity.com/profiles/76561199251152385/"
 				target="_blank"
 				rel="me noopener noreferrer"
-				data-config='{"cornerRadius":24,"zRadius":16,"blurAmount":0.12,"refraction":0.60,"chromAberration":0.04,"edgeHighlight":0.14,"specular":0.40,"fresnel":0.70,"opacity":0.93,"tintStrength":0.06,"shadowOpacity":0.16,"shadowSpread":18,"shadowOffsetY":8,"button":true}'
+				data-config='{"cornerRadius":26,"zRadius":20,"blurAmount":0.18,"refraction":0.80,"chromAberration":0.05,"edgeHighlight":0.22,"specular":0.50,"fresnel":0.90,"opacity":0.90,"tintStrength":0.09,"shadowOpacity":0.18,"shadowSpread":22,"shadowOffsetY":9,"button":true}'
 			>
 				<span class="pill__icon" aria-hidden="true">
 					<svg viewBox="0 0 24 24" role="presentation">
@@ -148,7 +155,7 @@
 				style="--i: 3; --col: 1; --row: 1"
 				href="mailto:rohansijaria@gmail.com"
 				rel="me"
-				data-config='{"cornerRadius":24,"zRadius":16,"blurAmount":0.12,"refraction":0.60,"chromAberration":0.04,"edgeHighlight":0.14,"specular":0.40,"fresnel":0.70,"opacity":0.93,"tintStrength":0.06,"shadowOpacity":0.16,"shadowSpread":18,"shadowOffsetY":8,"button":true}'
+				data-config='{"cornerRadius":26,"zRadius":20,"blurAmount":0.18,"refraction":0.80,"chromAberration":0.05,"edgeHighlight":0.22,"specular":0.50,"fresnel":0.90,"opacity":0.90,"tintStrength":0.09,"shadowOpacity":0.18,"shadowSpread":22,"shadowOffsetY":9,"button":true}'
 			>
 				<span class="pill__icon" aria-hidden="true">
 					<svg viewBox="0 0 24 24" role="presentation" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">

@@ -13,6 +13,8 @@
 const LIQUIDGLASS_URL = './vendor/liquidglass/liquidglass.js';
 const DISCORD_USERNAME = 'ro161012';
 
+import { initHero3D } from './hero3d.js';
+
 const stage = document.getElementById('stage');
 const toast = document.getElementById('toast');
 const discordBtn = document.getElementById('discord');
@@ -90,6 +92,28 @@ async function start() {
 	mark('fonts ready');
 	await decodeImages();
 	mark('images decoded');
+
+	// The hero model loads its own vendored three.js/skinview3d pair. It runs
+	// before the glass so the shader's first capture already contains the
+	// rendered character, and a failure just leaves the static render visible.
+	const canvas = document.getElementById('hero-3d');
+	if (canvas) {
+		try {
+			const hero = await initHero3D(canvas, {
+				skinUrl: './assets/skin-texture.png',
+				capeUrl: './assets/cape.png',
+			});
+			stage.classList.add('has-3d');
+			// the canvas was display:none while the viewer booted; take its real box now
+			hero.resize();
+			mark('3d ready');
+			// Debug handle, same idea as window.rxbowGlass.
+			window.rxbowHero = hero;
+		} catch (error) {
+			console.error('[rxbow] 3d viewer failed, keeping the static render:', error);
+			stage.classList.add('no-3d');
+		}
+	}
 
 	const { LiquidGlass } = await import(LIQUIDGLASS_URL);
 	mark('library imported');

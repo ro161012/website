@@ -96,9 +96,28 @@ a {
 	border-radius: 50%;
 	filter: blur(60px);
 	opacity: 0.5;
+	/* Slow drift: the glass samples this layer every frame, so holding still
+	   would make the panels read as static frost. Moving colour behind them is
+	   what sells them as liquid. */
+	animation: drift 26s ease-in-out infinite alternate;
+	will-change: transform;
+}
+
+@keyframes drift {
+	from {
+		translate: 0 0;
+		scale: 1;
+	}
+	to {
+		translate: var(--drift-x, 3vw) var(--drift-y, -2vh);
+		scale: 1.14;
+	}
 }
 
 .scene__blob--teal {
+	--drift-x: 5vw;
+	--drift-y: -3vh;
+	animation-duration: 21s;
 	width: 46vw;
 	height: 46vw;
 	left: -12vw;
@@ -107,6 +126,9 @@ a {
 }
 
 .scene__blob--indigo {
+	--drift-x: -4vw;
+	--drift-y: 3vh;
+	animation-duration: 31s;
 	width: 52vw;
 	height: 52vw;
 	right: -16vw;
@@ -115,6 +137,9 @@ a {
 }
 
 .scene__blob--warm {
+	--drift-x: -5vw;
+	--drift-y: 2vh;
+	animation-duration: 17s;
 	width: 34vw;
 	height: 34vw;
 	right: 4vw;
@@ -223,12 +248,74 @@ a {
 	z-index: 1;
 	display: block;
 	height: var(--skin-h);
-	width: auto;
-	image-rendering: pixelated;
+	width: calc(var(--skin-h) * 0.881);
 	filter: drop-shadow(0 18px 26px rgba(16, 16, 16, 0.16));
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-user-drag: none;
+}
+
+/* the live model: drag surface, and hidden until WebGL has drawn a frame */
+canvas.hero__skin {
+	display: none;
+	touch-action: none;
+	cursor: grab;
+}
+
+.has-3d canvas.hero__skin {
+	display: block;
+}
+
+canvas.hero__skin.is-dragging {
+	cursor: grabbing;
+}
+
+/* the pre-rendered PNG: the fallback, and what shows while three.js loads */
+.hero__skin--img {
+	width: auto;
+	image-rendering: pixelated;
+}
+
+.has-3d .hero__skin--img {
+	display: none;
+}
+
+.no-3d canvas.hero__skin {
+	display: none;
+}
+
+.hero__hint {
+	position: absolute;
+	left: 50%;
+	bottom: -2px;
+	translate: -50% 0;
+	margin: 0;
+	font-family: var(--font-pixel);
+	font-size: 8px;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: rgba(16, 16, 16, 0.34);
+	white-space: nowrap;
+	pointer-events: none;
+	transition: opacity 400ms ease;
+}
+
+.has-3d .hero__hint {
+	opacity: 1;
+}
+
+.hero__figure:not(.is-dragging) .hero__hint {
+	animation: hint-pulse 4.5s ease-in-out infinite;
+}
+
+.hero__skin:not(.has-3d) ~ .hero__hint,
+.no-3d .hero__hint {
+	display: none;
+}
+
+@keyframes hint-pulse {
+	0%, 70%, 100% { opacity: 0.38; }
+	85% { opacity: 0.75; }
 }
 
 .hero__aka {
