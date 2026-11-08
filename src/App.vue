@@ -62,7 +62,6 @@ async function copyDiscord() {
 					<span class="brand__name">rxbow</span>
 				</span>
 			</GlassPanel>
-			<p class="topbar__meta">{{ DISCORD_USERNAME }}</p>
 		</header>
 
 		<section class="hero">
