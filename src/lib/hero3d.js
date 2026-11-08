@@ -4,33 +4,20 @@
  * Two pieces, both in model units (1 unit = 1/16 block, player is 32 tall):
  *   - the character: skinview3d's SkinViewer, standing still with its arms at
  *     its sides — no props, no animation, just the skin as it is in game
- *   - the cape: a segmented cloth mesh whose rows run through a damped spring,
- *     so it keeps a little life while the model turns
+ *   - the cape: a cloth shell with real thickness, attached at the shoulder
+ *     line, whose rows run through a damped spring
  *
- * The figure stands on a soft contact shadow placed at the model's own foot
- * height, and `groundRatio()` reports where the feet land in canvas space so the
- * page can draw its plinth line through them.
+ * `groundRatio()` reports where the feet land in canvas space, so the page can
+ * draw its plinth line through them.
  *
  * three and skinview3d are vendored UMD bundles loaded on demand.
  */
 
+import { buildCape } from './cape.js';
+
 const ASSET_BASE = import.meta.env?.BASE_URL ?? "./";
 const THREE_SRC = `${ASSET_BASE}vendor/three/three.min.js`;
 const SKINVIEW_SRC = `${ASSET_BASE}vendor/skinview3d/skinview3d.bundle.js`;
-
-/* Cape texture: the cape occupies pixels (1,1)-(10,16) of a 64x32 sheet.
-   Texture v runs bottom-up with flipY, hence the inversion. */
-const CAPE_UV = {
-	u0: 1 / 64,
-	u1: 11 / 64,
-	vTop: 1 - 1 / 32,
-	vBottom: 1 - 17 / 32,
-};
-
-const CAPE_COLS = 6;
-const CAPE_ROWS = 12;
-const CAPE_W = 10;
-const CAPE_H = 16;
 
 function loadScript(src) {
 	const existing = document.querySelector(`script[data-rxbow-src="${src}"]`);
@@ -54,102 +41,6 @@ function loadScript(src) {
 		el.addEventListener('error', () => reject(new Error(`failed to load ${src}`)));
 		document.head.appendChild(el);
 	});
-}
-
-/**
- * A hanging cloth grid whose rows are driven by a damped spring each, plus a
- * travelling sine across the width. The springs are what give it inertia:
- * swing the model and the cape trails behind, then settles.
- */
-function buildCape(THREE, url) {
-	const positions = [];
-	const uvs = [];
-	const indices = [];
-
-	for (let r = 0; r <= CAPE_ROWS; r++) {
-		const v = r / CAPE_ROWS;
-		for (let c = 0; c <= CAPE_COLS; c++) {
-			const u = c / CAPE_COLS;
-			positions.push(-CAPE_W / 2 + u * CAPE_W, -v * CAPE_H, 0);
-			// u is mirrored along with the mesh, so flip it to keep the art readable
-			uvs.push(CAPE_UV.u1 - u * (CAPE_UV.u1 - CAPE_UV.u0), CAPE_UV.vTop + v * (CAPE_UV.vBottom - CAPE_UV.vTop));
-		}
-	}
-
-	for (let r = 0; r < CAPE_ROWS; r++) {
-		for (let c = 0; c < CAPE_COLS; c++) {
-			const a = r * (CAPE_COLS + 1) + c;
-			const b = a + 1;
-			const d = a + CAPE_COLS + 1;
-			const e = d + 1;
-			indices.push(a, d, b, b, d, e);
-		}
-	}
-
-	const geometry = new THREE.BufferGeometry();
-	geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-	geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-	geometry.setIndex(indices);
-
-	const texture = new THREE.TextureLoader().load(url);
-	texture.magFilter = THREE.NearestFilter;
-	texture.minFilter = THREE.NearestFilter;
-	texture.generateMipmaps = false;
-	if ('colorSpace' in texture) texture.colorSpace = THREE.SRGBColorSpace;
-
-	const material = new THREE.MeshStandardMaterial({
-		map: texture,
-		side: THREE.DoubleSide,
-		roughness: 0.92,
-		metalness: 0,
-		alphaTest: 0.45,
-	});
-
-	const mesh = new THREE.Mesh(geometry, material);
-	// shoulders sit at the top of the torso (y=24), cape hangs down the back
-	mesh.position.set(0, 24.2, -2.15);
-	mesh.rotation.y = Math.PI;
-
-	const rest = Float32Array.from(positions);
-	const rowOffset = new Float32Array(CAPE_ROWS + 1);
-	const rowVelocity = new Float32Array(CAPE_ROWS + 1);
-	let trail = 0;
-
-	return {
-		mesh,
-		update(dt, time, dragSpeed, energy) {
-			// the cape lags behind whatever the model is doing
-			trail += (dragSpeed - trail) * Math.min(1, dt * 5);
-
-			for (let r = 1; r <= CAPE_ROWS; r++) {
-				const k = r / CAPE_ROWS;
-				const wind = Math.sin(time * 2.0 - k * 2.6) * 0.85 * k * energy;
-				// clamp the drag contribution: a fast flick should flare the hem,
-				// not turn the cape into a sail
-				const target = wind + Math.max(-2.2, Math.min(2.2, trail)) * 1.7 * k;
-				rowVelocity[r] += (target - rowOffset[r]) * 62 * dt;
-				rowVelocity[r] *= Math.pow(0.02, dt);
-				rowOffset[r] += rowVelocity[r] * dt;
-				if (rowOffset[r] > 3.2) rowOffset[r] = 3.2;
-				if (rowOffset[r] < -3.2) rowOffset[r] = -3.2;
-			}
-
-			const pos = geometry.attributes.position.array;
-			for (let r = 0; r <= CAPE_ROWS; r++) {
-				const k = r / CAPE_ROWS;
-				const sway = Math.sin(time * 1.5 - k * 2.2) * 0.3 * k * energy;
-				const lift = Math.abs(rowOffset[r]) * 0.18 * k;
-				for (let c = 0; c <= CAPE_COLS; c++) {
-					const i = (r * (CAPE_COLS + 1) + c) * 3;
-					pos[i] = rest[i] + sway * (c / CAPE_COLS - 0.5) * 2;
-					pos[i + 1] = rest[i + 1] + lift;
-					pos[i + 2] = rest[i + 2] + rowOffset[r];
-				}
-			}
-			geometry.attributes.position.needsUpdate = true;
-			geometry.computeVertexNormals();
-		},
-	};
 }
 
 export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
@@ -199,12 +90,14 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	const bounds = new THREE.Box3().setFromObject(body);
 	const size = bounds.getSize(new THREE.Vector3());
 
+	// Hang the cape off the torso itself: its top edge sits on the shoulder
+	// line and its inner face starts at the back of the chest, so it drops from
+	// the shoulders instead of floating up behind the head.
+	const torso = body.getObjectByName('body') || body;
+	torso.updateWorldMatrix(true, true);
+	const torsoBox = new THREE.Box3().setFromObject(torso);
+	const shoulder = new THREE.Vector3(0, torsoBox.max.y - 0.15, torsoBox.min.z + 0.05);
 	const cape = buildCape(THREE, capeUrl);
-	const shoulder = new THREE.Vector3(
-		(bounds.min.x + bounds.max.x) / 2,
-		bounds.max.y - size.y * 0.245,
-		bounds.min.z - 0.15
-	);
 	cape.mesh.position.copy(body.worldToLocal(shoulder));
 	body.add(cape.mesh);
 
@@ -369,7 +262,8 @@ export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 		cape,
 		resize,
 		fitCamera,
-		groundRatio,			destroy() {
+		groundRatio,
+		destroy() {
 			cancelAnimationFrame(raf);
 			observer.disconnect();
 			window.removeEventListener('resize', resize);
