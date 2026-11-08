@@ -375,20 +375,17 @@ a {
 	gap: var(--pgap);
 }
 
+/* --s / --lift are sprung by src/lib/dockMagnify.ts from the pointer's distance
+   to each pill, so the whole row magnifies like an iOS dock. */
 .pill {
 	width: var(--pw);
 	height: var(--pill-h);
-	transition:
-		translate 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
-		scale 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-.pill:hover {
-	translate: 0 -3px;
+	transform-origin: 50% 88%;
+	transform: translateY(var(--lift, 0px)) scale(var(--s, 1));
+	will-change: transform;
 }
 
 .pill:active {
-	translate: 0 0;
 	scale: 0.985;
 }
 
@@ -576,7 +573,6 @@ a {
 		transition-duration: 0.001ms !important;
 	}
 
-	.pill:hover {
-		translate: 0 0;
-	}
+	/* the spring is skipped in JS instead; the lift itself stays, because it is
+	   the hover feedback rather than decoration */
 }

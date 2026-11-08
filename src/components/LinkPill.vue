@@ -14,7 +14,7 @@ defineEmits<{ (e: 'press'): void }>()
 </script>
 
 <template>
-	<GlassPanel class="pill" :radius="26" :bezel="16" :thickness="90">
+	<GlassPanel class="pill" :radius="26" :bezel="16" :thickness="90" magnify>
 		<component
 			:is="href ? 'a' : 'button'"
 			class="pill__hit"

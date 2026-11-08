@@ -23,6 +23,9 @@ const props = withDefaults(
 		blur?: number
 		specularOpacity?: number
 		specularSaturation?: number
+		/** lens magnification of the backdrop, sprung up while the panel is hovered */
+		magnify?: boolean
+		magnifyAmount?: number
 	}>(),
 	{
 		radius: 26,
@@ -32,6 +35,8 @@ const props = withDefaults(
 		blur: 0.5,
 		specularOpacity: 0.5,
 		specularSaturation: 1.6,
+		magnify: false,
+		magnifyAmount: 20,
 	},
 )
 
@@ -40,6 +45,45 @@ const el = ref<HTMLElement | null>(null)
 const size = ref({ w: 240, h: 72 })
 let observer: ResizeObserver | null = null
 let frame = 0
+
+// The magnify map is generated once; only this attribute animates, so the glass
+// never rebuilds its PNGs while the pointer is inside the panel.
+const magnifyScale = ref(0)
+let magnifyTarget = 0
+let magnifyFrame = 0
+let magnifyTime = 0
+
+function animateMagnify(time: number) {
+	const dt = Math.min((time - magnifyTime) / 1000, 0.05)
+	magnifyTime = time
+	// same spring as the reference MagnifyingGlass: stiffness 250, damping 14
+	const k = 1 - Math.exp((-250 * dt) / 14)
+	const next = magnifyScale.value + (magnifyTarget - magnifyScale.value) * k
+	if (Math.abs(magnifyTarget - next) < 0.05) {
+		magnifyScale.value = magnifyTarget
+		magnifyFrame = 0
+		return
+	}
+	magnifyScale.value = next
+	magnifyFrame = requestAnimationFrame(animateMagnify)
+}
+
+const reducedMotion =
+	typeof window !== 'undefined' && window.matchMedia
+		? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		: false
+
+function springMagnify(to: number) {
+	if (!props.magnify) return
+	magnifyTarget = to
+	if (reducedMotion) {
+		magnifyScale.value = to
+		return
+	}
+	if (magnifyFrame) return
+	magnifyTime = performance.now()
+	magnifyFrame = requestAnimationFrame(animateMagnify)
+}
 
 const supported =
 	typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('backdrop-filter', 'url(#lg-probe)')
@@ -87,6 +131,15 @@ function onPointerLeave() {
 	if (!el.value) return
 	el.value.style.setProperty('--mx', '50%')
 	el.value.style.setProperty('--my', '0%')
+	springMagnify(0)
+}
+
+function onPointerEnter() {
+	springMagnify(props.magnifyAmount)
+}
+
+function onBlur() {
+	springMagnify(0)
 }
 
 onMounted(() => {
@@ -97,14 +150,21 @@ onMounted(() => {
 	el.value.style.setProperty('--mx', '50%')
 	el.value.style.setProperty('--my', '0%')
 	el.value.addEventListener('pointermove', onPointerMove)
+	el.value.addEventListener('pointerenter', onPointerEnter)
 	el.value.addEventListener('pointerleave', onPointerLeave)
+	el.value.addEventListener('focusin', onPointerEnter)
+	el.value.addEventListener('focusout', onBlur)
 })
 
 onBeforeUnmount(() => {
 	observer?.disconnect()
 	if (frame) cancelAnimationFrame(frame)
+	if (magnifyFrame) cancelAnimationFrame(magnifyFrame)
 	el.value?.removeEventListener('pointermove', onPointerMove)
+	el.value?.removeEventListener('pointerenter', onPointerEnter)
 	el.value?.removeEventListener('pointerleave', onPointerLeave)
+	el.value?.removeEventListener('focusin', onPointerEnter)
+	el.value?.removeEventListener('focusout', onBlur)
 })
 </script>
 
@@ -123,6 +183,8 @@ onBeforeUnmount(() => {
 			:specular-saturation="specularSaturation"
 			shape="rectangle"
 			:corner-radius="cornerFraction"
+			:magnify="magnify"
+			:magnifying-scale="magnifyScale"
 			:quality="2"
 		/>
 		<div class="glass-panel__body">

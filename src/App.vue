@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import GlassPanel from './components/GlassPanel.vue'
 import HeroFigure from './components/HeroFigure.vue'
 import LinkPill from './components/LinkPill.vue'
+import { initDockMagnify } from './lib/dockMagnify'
 
 const base = import.meta.env.BASE_URL
 const DISCORD_USERNAME = 'ro161012'
+
+const dock = ref<HTMLElement | null>(null)
+let dockMagnify: { destroy: () => void } | null = null
 
 const toast = ref('')
 const toastVisible = ref(false)
@@ -18,7 +22,14 @@ function showToast(message: string) {
 	timer = window.setTimeout(() => (toastVisible.value = false), 2200)
 }
 
-onBeforeUnmount(() => window.clearTimeout(timer))
+onMounted(() => {
+	if (dock.value) dockMagnify = initDockMagnify(dock.value)
+})
+
+onBeforeUnmount(() => {
+	window.clearTimeout(timer)
+	dockMagnify?.destroy()
+})
 
 async function copyDiscord() {
 	let copied = false
@@ -60,7 +71,7 @@ async function copyDiscord() {
 			<p class="hero__aka">also known as <span>ro161012</span></p>
 		</section>
 
-		<nav class="dock" aria-label="Links">
+		<nav ref="dock" class="dock" aria-label="Links">
 			<LinkPill label="TikTok" sub="@rxbowed" href="https://www.tiktok.com/@rxbowed">
 				<template #icon>
 					<svg viewBox="0 0 24 24" role="presentation">
