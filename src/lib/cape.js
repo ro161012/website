@@ -155,7 +155,9 @@ export function buildCape(THREE, url) {
 				rowVelocity[r] += (target - rowOffset[r]) * 62 * dt;
 				rowVelocity[r] *= Math.pow(0.02, dt);
 				rowOffset[r] += rowVelocity[r] * dt;
-				if (rowOffset[r] > 3.2) rowOffset[r] = 3.2;
+				// it may swing far away from the body, but only a little towards it,
+				// or the cloth would pass through the back and the legs
+				if (rowOffset[r] > 0.55) rowOffset[r] = 0.55;
 				if (rowOffset[r] < -3.2) rowOffset[r] = -3.2;
 			}
 
