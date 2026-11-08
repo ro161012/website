@@ -152,11 +152,15 @@ Three things do the work, and all three matter:
 1. **Moving colour behind it** — `.scene__blob` elements drift on 17-31s loops
    (`@keyframes drift`). The shader samples those pixels every frame, so a
    static backdrop reads as frosted plastic while a moving one reads as liquid.
-2. **Stronger refraction** — the pills run `refraction` 0.80 and the nav 0.78
-   (was 0.60 / 0.55), with `chromAberration` up to 0.05 for the colour split at
-   the edges.
-3. **Edge response** — `edgeHighlight` 0.22, `specular` 0.50 and `fresnel` 0.90,
+2. **Refraction without haze** — the pills run `refraction` 0.86 and the nav
+   0.84, while `blurAmount` drops to 0.14 / 0.12: real glass bends its
+   surroundings but does not fog them. `chromAberration` 0.06 splits colour at
+   the rim, and `distortion` 0.7 adds the micro-noise that stops the surface
+   looking like idealised plastic.
+3. **Edge response** — `edgeHighlight` 0.30, `specular` 0.70 and `fresnel` 0.94,
    so the rim brightens as the panel turns away and the highlight travels.
+   `saturation` 0.14 keeps the colour behind the glass alive instead of
+   greying it out, which is the usual tell of a CSS backdrop-filter fake.
 
 Tune live from the console: `rxbowGlass.markChanged()` repaints after you edit a
 panel's `data-config` in the DOM; `rxbowHero` is the 3D viewer handle.
