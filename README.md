@@ -1,7 +1,8 @@
 # rxbow — portfolio
 
-A one-screen personal portfolio for **rxbow**: a Minecraft skin standing on white
-paper, with Apple-style liquid glass panels floating over it for the links.
+A one-screen personal portfolio for **rxbow** (also known as **ro161012**): a
+Minecraft skin standing on white paper, with Apple-style liquid glass panels
+floating over it for the links.
 
 Live effects come from [`@ybouane/liquidglass`](https://github.com/ybouane/liquidglass)
 — real WebGL refraction, chromatic aberration, bevel rim and drop shadow, not a
