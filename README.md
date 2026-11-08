@@ -46,10 +46,12 @@ baked for one light angle, so the highlight that follows the cursor is a painted
 ## The rest of the site
 
 - `src/lib/hero3d.js` — the character viewer: vendored three.js r156 +
-  skinview3d 3.4.2 from `public/vendor/`, drag to orbit, arrow keys to spin, and
-  a cape built as a 6×12 cloth grid on damped springs over `assets/cape.png`
-  (skinview3d's own cape is a rigid plane). `HeroFigure.vue` wraps it and keeps
-  the pre-rendered `skin-body.png` as the fallback.
+  skinview3d 3.4.2 from `public/vendor/`. The figure stands still with no prop,
+  drag (or the arrow keys) turns it, and its cape is a 6×12 cloth grid on damped
+  springs over `assets/cape.png` (skinview3d's own cape is a rigid plane).
+  `HeroFigure.vue` wraps it, draws the plinth line through the feet using the
+  projected foot height (`hero.groundRatio()`), and shows a drawn placeholder
+  rather than a stale render while the viewer boots.
 - `src/components/LinkPill.vue` — one dock link on a `GlassPanel`.
 - `src/components/GradientBlur.vue`, `src/components/LiquidGlassContainer.vue` —
   also ported from the reference project and available for containers that want

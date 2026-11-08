@@ -1,19 +1,17 @@
 /**
- * hero3d.js — the live, draggable hero character.
+ * hero3d.js — the live hero character, standing on the ground.
  *
- * Replaces the pre-rendered PNG with a real 3D player built from the same two
- * textures the rest of the site uses (assets/skin-texture.png + assets/cape.png),
- * so the visitor can drag the model around and see the back of it.
+ * Two pieces, both in model units (1 unit = 1/16 block, player is 32 tall):
+ *   - the character: skinview3d's SkinViewer, standing still with its arms at
+ *     its sides — no props, no animation, just the skin as it is in game
+ *   - the cape: a segmented cloth mesh whose rows run through a damped spring,
+ *     so it keeps a little life while the model turns
  *
- * Three pieces, all in model units (1 unit = 1/16 block, player is 32 tall):
- *   - the character: skinview3d's SkinViewer, skin loaded from the texture
- *   - the cape: a segmented cloth mesh whose vertices run through a small
- *     spring simulation, because skinview3d's own cape is a rigid plane
- *   - the crossbow: box geometry, attached to the body so it rotates with it
+ * The figure stands on a soft contact shadow placed at the model's own foot
+ * height, and `groundRatio()` reports where the feet land in canvas space so the
+ * page can draw its plinth line through them.
  *
- * No build step: three and skinview3d are vendored UMD bundles loaded on
- * demand, so a failure here leaves the static PNG in place instead of an
- * empty hero.
+ * three and skinview3d are vendored UMD bundles loaded on demand.
  */
 
 const ASSET_BASE = import.meta.env?.BASE_URL ?? "./";
@@ -154,39 +152,7 @@ function buildCape(THREE, url) {
 	};
 }
 
-/** A box-built crossbow: wooden stock, bow limbs, drawn string, loaded bolt. */
-function buildCrossbow(THREE) {
-	const group = new THREE.Group();
-	const wood = new THREE.MeshStandardMaterial({ color: 0x6d4526, roughness: 0.85, metalness: 0.04 });
-	const limb = new THREE.MeshStandardMaterial({ color: 0x412a17, roughness: 0.8 });
-	const string = new THREE.MeshStandardMaterial({ color: 0xf3efe2, roughness: 0.65 });
-	const iron = new THREE.MeshStandardMaterial({ color: 0xb4bcc4, roughness: 0.35, metalness: 0.55 });
-
-	const stock = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.25, 7.6), wood);
-	group.add(stock);
-
-	const grip = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.3, 1.7), limb);
-	grip.position.set(0, -1.5, -0.7);
-	group.add(grip);
-
-	const limbs = new THREE.Mesh(new THREE.BoxGeometry(8.6, 0.95, 1.15), limb);
-	limbs.position.set(0, 0.1, 1.5);
-	limbs.rotation.x = 0.14;
-	group.add(limbs);
-
-	// drawn back behind the limbs: that is what makes it read as loaded
-	const drawString = new THREE.Mesh(new THREE.BoxGeometry(7.9, 0.24, 0.24), string);
-	drawString.position.set(0, 0.1, -0.35);
-	group.add(drawString);
-
-	const bolt = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 6.2), iron);
-	bolt.position.set(0, 0.62, 2.1);
-	group.add(bolt);
-
-	return group;
-}
-
-export async function initHero3D(canvas, { skinUrl, capeUrl }) {
+export async function initHero3D(canvas, { skinUrl, capeUrl, onGround }) {
 	await loadScript(THREE_SRC);
 	await loadScript(SKINVIEW_SRC);
 
@@ -199,8 +165,8 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 	// here would give 0x0 and leave the viewer stuck at its fallback size.
 	// Measure the figure instead: the fallback render is what defines the box.
 	const frame = canvas.parentElement?.getBoundingClientRect();
-	const width = Math.round(frame?.width || canvas.clientWidth || 360);
-	const height = Math.round(frame?.height || canvas.clientHeight || 409);
+	const width = Math.round(frame?.width || canvas.clientWidth || 320);
+	const height = Math.round(frame?.height || canvas.clientHeight || 520);
 
 	const viewer = new skinview3d.SkinViewer({
 		canvas,
@@ -210,15 +176,19 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 		model: 'auto-detect',
 	});
 
+	// Standing still: no animation is added, so the model keeps the in-game
+	// idle pose with its arms down.
 	viewer.controls.enableRotate = true;
 	viewer.controls.enableZoom = false;
 	viewer.controls.enablePan = false;
-	viewer.controls.minPolarAngle = 0.7;
-	viewer.controls.maxPolarAngle = 2.4;
-	viewer.controls.rotateSpeed = 0.85;
-	viewer.zoom = 0.92;
-	viewer.autoRotate = !reduced;
-	viewer.autoRotateSpeed = 0.9;
+	viewer.controls.minPolarAngle = 1.18;
+	viewer.controls.maxPolarAngle = 1.72;
+	viewer.zoom = 1;
+	viewer.autoRotate = false;
+	// The model turns only when it is dragged. skinview3d's controls rotate on
+	// bare pointer movement, which makes the camera drift whenever a cursor
+	// crosses the canvas, so they are switched off and the yaw is applied here.
+	viewer.controls.enabled = false;
 
 	const body = viewer.playerObject.skin || viewer.playerObject;
 
@@ -228,8 +198,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 	body.updateWorldMatrix(true, true);
 	const bounds = new THREE.Box3().setFromObject(body);
 	const size = bounds.getSize(new THREE.Vector3());
-	const arm = body.getObjectByName('rightArm') || body.getObjectByName('RightArm') || null;
-	const armBox = arm ? new THREE.Box3().setFromObject(arm) : null;
 
 	const cape = buildCape(THREE, capeUrl);
 	const shoulder = new THREE.Vector3(
@@ -240,44 +208,84 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 	cape.mesh.position.copy(body.worldToLocal(shoulder));
 	body.add(cape.mesh);
 
-	const crossbow = buildCrossbow(THREE);
-	crossbow.scale.setScalar(0.6);
-	crossbow.rotation.set(0.12, Math.PI, -0.16);
-	const grip = armBox
-		? new THREE.Vector3(
-				(armBox.min.x + armBox.max.x) / 2,
-				armBox.min.y + (armBox.max.y - armBox.min.y) * 0.18,
-				armBox.max.z + 0.3
-			)
-		: new THREE.Vector3(
-				bounds.min.x + size.x * 0.14,
-				bounds.min.y + size.y * 0.42,
-				bounds.max.z + 0.3
-			);
-	crossbow.position.copy(body.worldToLocal(grip));
-	body.add(crossbow);
+	const feet = new THREE.Vector3(0, bounds.min.y, 0);
+	const projected = new THREE.Vector3();
 
-	/* ---- pointer: drag to orbit, with velocity feeding the cape ---- */
+	/**
+	 * Frame the whole standing body — feet to head — for whatever box the canvas
+	 * currently has. skinview3d's own framing zooms to the width, which crops a
+	 * tall, narrow column, so the distance is solved from both axes instead.
+	 */
+	function fitCamera() {
+		body.updateWorldMatrix(true, true);
+		const box = new THREE.Box3().setFromObject(body);
+		const boxSize = box.getSize(new THREE.Vector3());
+		const centerY = (box.min.y + box.max.y) / 2;
+		const fov = (viewer.camera.fov * Math.PI) / 180;
+		const aspect = viewer.camera.aspect || 1;
+		const distV = ((boxSize.y * 1.14) / 2) / Math.tan(fov / 2);
+		const distH = ((boxSize.x * 1.32) / 2) / Math.tan(fov / 2) / aspect;
+		const dist = Math.max(distV, distH);
+
+		viewer.camera.position.set(0, centerY + boxSize.y * 0.015, dist);
+		viewer.camera.lookAt(0, centerY, 0);
+		viewer.camera.updateProjectionMatrix();
+
+		feet.set(0, box.min.y, 0);
+		notifyGround();
+	}
+
+	/**
+	 * Report where the feet landed after the camera settles. Called from the fit
+	 * and on resize, so the page's plinth line never drifts from the soles.
+	 */
+	function notifyGround() {
+		if (!onGround) return;
+		requestAnimationFrame(() => requestAnimationFrame(() => onGround(groundRatio())));
+	}
+
+	/** Where the feet sit inside the canvas, 0 = top edge, 1 = bottom edge. */
+	function groundRatio() {
+		viewer.camera.updateMatrixWorld();
+		projected.copy(feet).project(viewer.camera);
+		const ratio = (1 - projected.y) / 2;
+		return Math.min(1.2, Math.max(0, ratio));
+	}
+
+	fitCamera();
+	// auto-detect can swap the slim/classic model once the skin decodes
+	window.setTimeout(fitCamera, 350);
+
+		/* ---- pointer: drag to turn, with the release velocity carrying on ---- */
+	const YAW_PER_PX = 0.008;
+	let yaw = 0;
+	let spin = 0;
 	let dragSpeed = 0;
 	let lastX = 0;
 	let lastT = 0;
-	let resumeTimer = 0;
 	let dragging = false;
 
 	const onDown = (event) => {
 		dragging = true;
+		spin = 0;
 		lastX = event.clientX;
 		lastT = performance.now();
-		viewer.autoRotate = false;
 		canvas.classList.add('is-dragging');
-		window.clearTimeout(resumeTimer);
+		try {
+			canvas.setPointerCapture(event.pointerId);
+		} catch {
+			/* capture is a nicety */
+		}
 	};
 
 	const onMove = (event) => {
 		if (!dragging) return;
 		const now = performance.now();
 		const dt = Math.max(16, now - lastT);
-		dragSpeed = Math.min(6, Math.abs(event.clientX - lastX) / dt * 12);
+		const dx = event.clientX - lastX;
+		yaw += dx * YAW_PER_PX;
+		spin = dx * YAW_PER_PX * 0.55;
+		dragSpeed = Math.min(6, (Math.abs(dx) / dt) * 12);
 		lastX = event.clientX;
 		lastT = now;
 	};
@@ -286,10 +294,6 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 		if (!dragging) return;
 		dragging = false;
 		canvas.classList.remove('is-dragging');
-		if (reduced) return;
-		resumeTimer = window.setTimeout(() => {
-			viewer.autoRotate = true;
-		}, 2600);
 	};
 
 	canvas.addEventListener('pointerdown', onDown);
@@ -300,7 +304,7 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 		// keyboard spin for anyone who cannot drag
 		if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
 			event.preventDefault();
-			viewer.playerWrapper.rotation.y += event.key === 'ArrowLeft' ? -0.22 : 0.22;
+			yaw += event.key === 'ArrowLeft' ? -0.2 : 0.2;
 		}
 	});
 
@@ -310,6 +314,11 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 	const tick = (now) => {
 		const dt = Math.min(0.05, (now - last) / 1000);
 		last = now;
+		if (!dragging) {
+			yaw += spin;
+			spin *= Math.pow(0.02, dt);
+		}
+		viewer.playerWrapper.rotation.y = yaw;
 		cape.update(dt, now / 1000, dragSpeed, reduced ? 0.35 : 1);
 		dragSpeed *= Math.pow(0.04, dt);
 		raf = requestAnimationFrame(tick);
@@ -323,19 +332,22 @@ export async function initHero3D(canvas, { skinUrl, capeUrl }) {
 		if (w && h) {
 			viewer.width = w;
 			viewer.height = h;
+			fitCamera();
 		}
 	};
 	const observer = new ResizeObserver(resize);
 	observer.observe(canvas);
+	window.addEventListener('resize', resize);
 
 	return {
 		viewer,
 		cape,
-		crossbow,
 		resize,
-		destroy() {
+		fitCamera,
+		groundRatio,			destroy() {
 			cancelAnimationFrame(raf);
 			observer.disconnect();
+			window.removeEventListener('resize', resize);
 			window.removeEventListener('pointermove', onMove);
 			window.removeEventListener('pointerup', onUp);
 			window.removeEventListener('pointercancel', onUp);
