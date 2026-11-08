@@ -447,6 +447,18 @@ canvas.hero__skin.is-dragging {
 	border-radius: inherit;
 }
 
+/* ---------------------------------------------- SVG glass (Chromium)
+   The displacement filter refracts the live backdrop, so no rasterised
+   snapshot can go stale. Everything else about the surface stays the same. */
+
+.has-svg-glass .glass {
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.55);
+	box-shadow:
+		0 1px 1px rgba(16, 16, 16, 0.05),
+		0 14px 34px rgba(16, 16, 16, 0.11);
+}
+
 /* ---------------------------------------------- live glass surface
    The shader's specular comes from two fixed lights and its background raster
    is only re-shot when something marks it dirty, so anything that should

@@ -165,6 +165,28 @@ Three things do the work, and all three matter:
    `saturation` 0.14 keeps the colour behind the glass alive instead of
    greying it out, which is the usual tell of a CSS backdrop-filter fake.
 
+## Two glass engines
+
+`glass.js` is the default. It treats each panel's rounded bezel as a convex
+lens, rasterises the displacement field into the red/green channels of a PNG and
+feeds that to `backdrop-filter: url(#lg-…)`. The compositor evaluates the filter
+against the *live* backdrop every frame, so the 3D hero and the drifting blobs
+keep bending inside the panels while they move. Technique after kube.io's
+"Liquid Glass in the Browser" and `mkj0kjay/vue-web-liquid-glass`. Knobs sit at
+the top of the file: `BEZEL` (bevel depth), `STRENGTH` (peak displacement, px)
+and `BLUR`. One map is built per `width x height x radius`, so the four dock
+pills share a single filter and it is rebuilt on resize.
+
+`vendor/liquidglass` is the fallback, used when `CSS.supports('backdrop-filter',
+'url(#f)')` is false — Safari and Firefox do not ship SVG filters as
+`backdrop-filter`. That path rasterises the scene and re-shoots only on a dirty
+mark, so its panels see a frozen backdrop, and the `data-config` values in
+`index.html` only matter there.
+
+Both paths finish with `#stage[data-glass="on"]`; `has-svg-glass` marks the fast
+one, which also gets a hairline border and a CSS drop shadow, since there is no
+shader to draw them.
+
 ## Interface surfaces
 
 Every surface is glass: the nav, the four dock pills and the toast. The toast

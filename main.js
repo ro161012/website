@@ -14,6 +14,7 @@ const LIQUIDGLASS_URL = './vendor/liquidglass/liquidglass.js';
 const DISCORD_USERNAME = 'ro161012';
 
 import { initHero3D } from './hero3d.js';
+import { initSvgGlass } from './glass.js';
 
 const stage = document.getElementById('stage');
 const toast = document.getElementById('toast');
@@ -162,16 +163,33 @@ async function start() {
 		}
 	}
 
-	const { LiquidGlass } = await import(LIQUIDGLASS_URL);
-	mark('library imported');
+	// Preferred: SVG displacement through backdrop-filter. Chromium refracts the
+	// live backdrop, so the hero and the drifting blobs stay bent while moving;
+	// the WebGL rasteriser below only re-shoots its scene on a dirty mark.
+	if (typeof CSS !== 'undefined' && CSS.supports?.('backdrop-filter', 'url(#lg-probe)')) {
+		try {
+			glass = initSvgGlass({ root: stage, elements: glassElements });
+			stage.classList.add('has-svg-glass');
+			mark('svg glass ready');
+		} catch (error) {
+			console.warn('[rxbow] svg glass failed, using the webgl rasteriser:', error);
+			glass = null;
+		}
+	}
 
-	glass = await LiquidGlass.init({
-		root: stage,
-		glassElements,
-	});
-	mark('glass ready');
+	if (!glass) {
+		const { LiquidGlass } = await import(LIQUIDGLASS_URL);
+		mark('library imported');
 
-	hideShaderCanvases();
+		glass = await LiquidGlass.init({
+			root: stage,
+			glassElements,
+		});
+		mark('glass ready');
+
+		hideShaderCanvases();
+	}
+
 	stage.dataset.glass = 'on';
 
 	// Debug handle for tuning shader values from the console.
