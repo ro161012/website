@@ -1,17 +1,17 @@
 # rxbow
 
 Personal page for **rxbow** (aka `ro161012`), built on the layout of
-[qdran.de](https://www.qdran.de/) with a Berserk-manga treatment: a real
-monochrome manga panel as the backdrop, drifting under screentone, grain and a
-slow light sweep.
+[qdran.de](https://www.qdran.de/) with a Berserk-manga treatment: a black-and-white
+Berserk wallpaper — a moonlit field, Guts on horseback — as the backdrop,
+drifting under screentone, grain and a slow light sweep.
 
 Plain HTML, CSS and one ES module — Vite is only the dev server and bundler.
 
 ## What lives where
 
-- `index.html` — the page: clock, wordmark, tagline, the four social rows.
-- `public/berserk-panel.webp` — the backdrop: a Berserk manga panel, converted
-  to greyscale and served at 1500 px wide.
+- `index.html` — the page: clock, wordmark, tagline, the three social rows.
+- `public/berserk-panel.webp` — the backdrop: the Berserk wallpaper at 1920 ×
+  1080, kept as the original black-and-white art.
 - `src/style.css` — tokens, the background stack (`panel` image → tone,
   screentone and grain → sheen → ash → vignette), the row list, responsive
   rules and the reduced-motion fallbacks.
@@ -27,7 +27,7 @@ Plain HTML, CSS and one ES module — Vite is only the dev server and bundler.
 
 ## Links
 
-TikTok `@rxbowed` · Discord `ro161012` · Steam profile ·
+TikTok `@rxbowed` · Discord `ro161012` ·
 [NameMC rxbow](https://namemc.com/profile/rxbow). No email.
 
 ## Scripts
@@ -48,5 +48,5 @@ npm run preview
 - Layout reference: [qdran.de](https://www.qdran.de/).
 - Type: Pirata One, EB Garamond and JetBrains Mono, all from Google Fonts
   (SIL Open Font License).
-- Backdrop panel: Kentaro Miura, *Berserk* (Hakusensha). Used here as one-off
-  fan artwork; swap or remove it if this page ever goes commercial.
+- Backdrop: Kentaro Miura, *Berserk* (Hakusensha). Used here as one-off fan
+  artwork; swap or remove it if this page ever goes commercial.

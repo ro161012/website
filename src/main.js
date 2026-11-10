@@ -90,13 +90,13 @@ function draw(dt) {
 
 		// ash catches the light unevenly: a soft core plus a faint halo
 		ctx.beginPath()
-		ctx.fillStyle = `rgba(242, 240, 234, ${mote.alpha * 0.7})`
+		ctx.fillStyle = `rgba(255, 255, 255, ${mote.alpha * 0.7})`
 		ctx.arc(mote.x, mote.y, mote.r, 0, Math.PI * 2)
 		ctx.fill()
 
 		if (mote.r > 1.5) {
 			ctx.beginPath()
-			ctx.fillStyle = `rgba(242, 240, 234, ${mote.alpha * 0.1})`
+			ctx.fillStyle = `rgba(255, 255, 255, ${mote.alpha * 0.1})`
 			ctx.arc(mote.x, mote.y, mote.r * 3.6, 0, Math.PI * 2)
 			ctx.fill()
 		}
