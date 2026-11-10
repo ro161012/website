@@ -48,8 +48,7 @@ function randomMote(fromBottom) {
 		r: 0.4 + depth * 1.9,
 		vy: -(0.1 + depth * 0.5),
 		vx: (Math.random() - 0.5) * 0.16,
-		alpha: 0.06 + depth * 0.36,
-		ember: Math.random() < 0.14,
+		alpha: 0.05 + depth * 0.3,
 		phase: Math.random() * Math.PI * 2,
 		sway: 0.1 + Math.random() * 0.5,
 		spin: 0.2 + Math.random() * 0.8,
@@ -91,17 +90,13 @@ function draw(dt) {
 
 		// ash catches the light unevenly: a soft core plus a faint halo
 		ctx.beginPath()
-		ctx.fillStyle = mote.ember
-			? `rgba(178, 44, 32, ${mote.alpha})`
-			: `rgba(233, 228, 216, ${mote.alpha * 0.7})`
+		ctx.fillStyle = `rgba(242, 240, 234, ${mote.alpha * 0.7})`
 		ctx.arc(mote.x, mote.y, mote.r, 0, Math.PI * 2)
 		ctx.fill()
 
 		if (mote.r > 1.5) {
 			ctx.beginPath()
-			ctx.fillStyle = mote.ember
-				? `rgba(178, 44, 32, ${mote.alpha * 0.16})`
-				: `rgba(233, 228, 216, ${mote.alpha * 0.1})`
+			ctx.fillStyle = `rgba(242, 240, 234, ${mote.alpha * 0.1})`
 			ctx.arc(mote.x, mote.y, mote.r * 3.6, 0, Math.PI * 2)
 			ctx.fill()
 		}
@@ -140,6 +135,42 @@ document.addEventListener('visibilitychange', () => {
 	if (document.hidden) stop()
 	else start()
 })
+
+/* --------------------------------------------------------- panel parallax */
+
+// The panel drifts on its own; the pointer adds a slight offset so the printed
+// page reads as a surface in front of the viewer rather than a flat texture.
+const panelLayer = document.querySelector('.panel__layer')
+
+if (panelLayer && !calm) {
+	const reach = 16
+	let targetX = 0
+	let targetY = 0
+	let currentX = 0
+	let currentY = 0
+	let raf = 0
+
+	const settle = () => {
+		currentX += (targetX - currentX) * 0.08
+		currentY += (targetY - currentY) * 0.08
+		panelLayer.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`
+		if (Math.abs(targetX - currentX) > 0.1 || Math.abs(targetY - currentY) > 0.1) {
+			raf = requestAnimationFrame(settle)
+		} else {
+			raf = 0
+		}
+	}
+
+	window.addEventListener(
+		'pointermove',
+		(event) => {
+			targetX = -((event.clientX / window.innerWidth) * 2 - 1) * reach
+			targetY = -((event.clientY / window.innerHeight) * 2 - 1) * reach
+			if (!raf) raf = requestAnimationFrame(settle)
+		},
+		{ passive: true }
+	)
+}
 
 /* ------------------------------------------------------------ copy to clip */
 

@@ -5,9 +5,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>rxbow</title>
 		<meta name="description" content="rxbow — also known as ro161012. TikTok, Discord, Steam and NameMC." />
-		<meta name="theme-color" content="#0b0a09" />
+		<meta name="theme-color" content="#08080a" />
 		<meta name="color-scheme" content="dark" />
 		<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+		<link rel="preload" as="image" href="./berserk-panel.webp" />
 
 		<meta property="og:title" content="rxbow" />
 		<meta property="og:description" content="rxbow — also known as ro161012." />
@@ -22,21 +23,17 @@
 	</head>
 
 	<body>
-		<canvas id="ash" aria-hidden="true"></canvas>
-		<div class="ink" aria-hidden="true">
-			<svg class="sigil" viewBox="0 0 200 260" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M100 14v232" />
-				<path d="M100 74c-26 20-44 48-62 82" />
-				<path d="M100 74c26 20 44 48 62 82" />
-				<path d="M38 156c8-22 20-38 34-50" />
-				<path d="M162 156c-8-22-20-38-34-50" />
-				<path d="M100 14v-0" />
-			</svg>
+		<div class="panel" aria-hidden="true">
+			<div class="panel__layer">
+				<img class="panel__img" src="./berserk-panel.webp" alt="" width="1800" height="1316" fetchpriority="high" decoding="async" />
+			</div>
+			<div class="panel__tone"></div>
+			<div class="panel__sheen"></div>
 		</div>
+		<canvas id="ash" aria-hidden="true"></canvas>
 
 		<main class="page">
 			<header class="top">
-				<span class="top__mark">portfolio</span>
 				<div class="top__clock">
 					<span class="top__tz" id="tz">--</span>
 					<time id="clock">--:--:--</time>
@@ -51,7 +48,6 @@
 			<section class="list" aria-labelledby="socials-title">
 				<div class="list__head">
 					<h2 class="list__title" id="socials-title">Socials</h2>
-					<span class="list__count">04</span>
 				</div>
 
 				<ul class="rows">
