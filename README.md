@@ -15,11 +15,15 @@ Plain HTML, CSS and one ES module — Vite is only the dev server and bundler.
 - `src/style.css` — tokens, the background stack (`panel` image → tone,
   screentone and grain → sheen → ash → vignette), the row list, responsive
   rules and the reduced-motion fallbacks.
-- `src/main.js` — four small pieces:
+- `src/main.js` — five small pieces:
   - the clock in the top right, local time with seconds plus the timezone label;
   - the ash canvas: depth-randomised grey motes drifting upward with a
     per-particle sway, capped at 2× DPR, paused when the tab is hidden and
     rendered as a single static frame when the OS asks for reduced motion;
+  - the dot sphere: 1400 Fibonacci-distributed points drawn as white squares,
+    alpha by depth, turning slowly on the right edge and tilting toward the
+    pointer; it pauses when the tab is hidden and holds still under reduced
+    motion while still following the pointer;
   - the panel parallax: a smoothed pointer offset so the page reads as a
     surface in front of the viewer (skipped under reduced motion);
   - the Discord row copies `ro161012` on click and confirms with a toast,

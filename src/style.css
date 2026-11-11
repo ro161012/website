@@ -120,6 +120,19 @@ body {
 	pointer-events: none;
 }
 
+/* the pointer-tilted dot sphere, screened back so it dissolves into the black */
+#globe {
+	position: fixed;
+	top: 50%;
+	right: -16vmin;
+	z-index: 1;
+	width: 108vmin;
+	height: 108vmin;
+	translate: 0 -50%;
+	opacity: 0.75;
+	pointer-events: none;
+}
+
 /* ash drifting in front of the panel */
 #ash {
 	position: fixed;
@@ -460,6 +473,14 @@ body::after {
 	.panel__img {
 		object-position: 34% 55%;
 		filter: grayscale(1) contrast(1.02) brightness(0.8);
+	}
+
+	#globe {
+		top: 40%;
+		right: -40vmin;
+		width: 118vmin;
+		height: 118vmin;
+		opacity: 0.38;
 	}
 
 	.hero {
