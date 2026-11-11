@@ -137,14 +137,6 @@ body {
 	pointer-events: none;
 }
 
-/* ash drifting in front of the panel */
-#ash {
-	position: fixed;
-	inset: 0;
-	z-index: 1;
-	pointer-events: none;
-}
-
 /* ink vignette so the page edges darken like a printed panel */
 body::after {
 	content: '';
