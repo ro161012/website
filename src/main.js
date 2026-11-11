@@ -171,29 +171,3 @@ if (panelLayer && !calm) {
 		{ passive: true }
 	)
 }
-
-/* ------------------------------------------------------------ copy to clip */
-
-const toast = document.getElementById('toast')
-let toastTimer = 0
-
-function showToast(message) {
-	toast.textContent = message
-	toast.classList.add('is-visible')
-	clearTimeout(toastTimer)
-	toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2000)
-}
-
-for (const button of document.querySelectorAll('[data-copy]')) {
-	button.addEventListener('click', async () => {
-		const value = button.dataset.copy
-		let copied = false
-		try {
-			await navigator.clipboard.writeText(value)
-			copied = true
-		} catch {
-			copied = false
-		}
-		showToast(copied ? `discord · ${value} copied` : `discord · ${value}`)
-	})
-}
