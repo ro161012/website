@@ -25,7 +25,8 @@ Plain HTML, CSS and one ES module — Vite is only the dev server and bundler.
 
   The rows are plain: TikTok and NameMC open in a new tab, and Discord is
   just text — nothing to click, nothing copied.
-- `favicon.svg` — the sigil icon in bone on ink.
+- `favicon.svg` — the wallpaper's moon over the field as a two-shape mark,
+  white on black, drawn so it still reads at 16px in a tab.
 
 ## Links
 
