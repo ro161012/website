@@ -62,12 +62,17 @@ body {
 }
 
 .panel__img {
+	/* the ink in this panel sits right of centre, so the drift is anchored off-centre
+	   by the measured offset of the artwork's ink centroid (57.4% x, 48.3% y) */
+	--shift-x: -7.4%;
+	--shift-y: 1.7%;
+
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 	object-position: 50% 50%;
 	filter: grayscale(1) contrast(1.04) brightness(1);
-	transform: scale(1.08);
+	transform: translate3d(var(--shift-x), var(--shift-y), 0) scale(1.14);
 	animation: panel-drift 84s ease-in-out infinite alternate;
 	will-change: transform;
 }
@@ -437,10 +442,10 @@ body::after {
 /* slow push in and drift across the panel, like a camera over a page */
 @keyframes panel-drift {
 	from {
-		transform: scale(1.06) translate3d(-1.1%, 1.2%, 0);
+		transform: translate3d(calc(var(--shift-x) - 1.1%), calc(var(--shift-y) + 1.2%), 0) scale(1.1);
 	}
 	to {
-		transform: scale(1.15) translate3d(1.3%, -1.4%, 0);
+		transform: translate3d(calc(var(--shift-x) + 1.3%), calc(var(--shift-y) - 1.4%), 0) scale(1.18);
 	}
 }
 
@@ -470,6 +475,9 @@ body::after {
 	}
 
 	.panel__img {
+		--shift-x: -2%;
+		--shift-y: 1%;
+
 		filter: grayscale(1) contrast(1.04) brightness(0.98);
 	}
 
