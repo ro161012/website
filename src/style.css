@@ -470,7 +470,7 @@ body::after {
 	}
 
 	.panel__img {
-		object-position: 34% 55%;
+		object-position: 50% 50%;
 		filter: grayscale(1) contrast(1.04) brightness(0.98);
 	}
 
