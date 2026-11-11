@@ -1,11 +1,11 @@
 /* ---------------------------------------------------------------- tokens */
 
 :root {
-	--paper: #000000;
-	--bone: #ffffff;
-	--ash: #9d9d9d;
-	--ash-dim: rgba(255, 255, 255, 0.3);
-	--line: rgba(255, 255, 255, 0.14);
+	--paper: #ffffff;
+	--bone: #0a0a0a;
+	--ash: #575757;
+	--ash-dim: rgba(10, 10, 10, 0.32);
+	--line: rgba(10, 10, 10, 0.16);
 
 	--mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 	--display: 'Pirata One', 'Times New Roman', serif;
@@ -38,13 +38,13 @@ body {
 }
 
 ::selection {
-	background: rgba(255, 255, 255, 0.82);
-	color: #000000;
+	background: rgba(10, 10, 10, 0.86);
+	color: #ffffff;
 }
 
 /* ------------------------------------------------------- background stack */
 
-/* the Berserk wallpaper: a moonlit field, drifting like a living page */
+/* the Berserk wallpaper: white cliffs over the sea, drifting like a printed page */
 .panel {
 	position: fixed;
 	inset: 0;
@@ -66,7 +66,7 @@ body {
 	height: 100%;
 	object-fit: cover;
 	object-position: 50% 42%;
-	filter: grayscale(1) contrast(1.02) brightness(0.85);
+	filter: grayscale(1) contrast(1.04) brightness(1);
 	transform: scale(1.08);
 	animation: panel-drift 84s ease-in-out infinite alternate;
 	will-change: transform;
@@ -75,26 +75,25 @@ body {
 /* ink wash, printed screentone and grain sitting over the panel */
 .panel__tone {
 	position: absolute;
-	inset: 0;
-	background:
+	inset: 0;	background:
 		linear-gradient(
-			90deg,				rgba(0, 0, 0, 0.95) 0%,
-				rgba(0, 0, 0, 0.72) 42%,
-				rgba(0, 0, 0, 0.18) 72%,
-				rgba(0, 0, 0, 0.45) 100%
+			90deg,				rgba(255, 255, 255, 0.55) 0%,
+				rgba(255, 255, 255, 0.44) 36%,
+				rgba(255, 255, 255, 0.08) 72%,
+				rgba(255, 255, 255, 0.28) 100%
 		),
-		linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.32) 100%),
-		radial-gradient(120% 90% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
-		radial-gradient(115% 95% at 50% 12%, transparent 34%, rgba(0, 0, 0, 0.82) 100%);
+		linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.24) 100%),
+		radial-gradient(120% 90% at 50% -10%, rgba(255, 255, 255, 0.3), transparent 62%),
+		radial-gradient(115% 95% at 50% 12%, transparent 45%, rgba(255, 255, 255, 0.4) 100%);
 }
 
 .panel__tone::before {
 	content: '';
 	position: absolute;
 	inset: -12%;
-	background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1.6px);
+	background-image: radial-gradient(rgba(10, 10, 10, 0.16) 1px, transparent 1.6px);
 	background-size: 7px 7px;
-	opacity: 0.12;
+	opacity: 0.1;
 	-webkit-mask-image: radial-gradient(80% 70% at 66% 32%, #000 0%, transparent 78%);
 	mask-image: radial-gradient(80% 70% at 66% 32%, #000 0%, transparent 78%);
 	animation: screentone 70s linear infinite;
@@ -105,15 +104,15 @@ body {
 	position: absolute;
 	inset: 0;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-	opacity: 0.15;
-	mix-blend-mode: screen;
+	opacity: 0.1;
+	mix-blend-mode: multiply;
 }
 
 /* a slow lamp sweep across the printed page */
 .panel__sheen {
 	position: absolute;
 	inset: -25%;
-	background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.09) 50%, transparent 58%);
+	background: linear-gradient(100deg, transparent 42%, rgba(10, 10, 10, 0.05) 50%, transparent 58%);
 	transform: translate3d(-55%, 0, 0);
 	opacity: 0;
 	animation: sheen 38s ease-in-out infinite;
@@ -148,7 +147,7 @@ body::after {
 	inset: 0;
 	z-index: 2;
 	pointer-events: none;
-	background: radial-gradient(120% 100% at 50% 10%, transparent 38%, rgba(0, 0, 0, 0.55) 100%);
+	background: radial-gradient(120% 100% at 50% 10%, transparent 44%, rgba(255, 255, 255, 0.4) 100%);
 }
 
 /* ------------------------------------------------------------------ shell */
@@ -210,14 +209,14 @@ body::after {
 	letter-spacing: 0.005em;
 	color: var(--bone);
 	text-shadow:
-		0 1px 0 rgba(0, 0, 0, 0.6),
-		0 24px 70px rgba(0, 0, 0, 0.8);
+		0 1px 0 rgba(255, 255, 255, 0.8),
+		0 18px 64px rgba(255, 255, 255, 0.92);
 	animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .name__cut {
-	color: #ffffff;
-	text-shadow: 0 0 42px rgba(255, 255, 255, 0.22);
+	color: var(--bone);
+	text-shadow: 0 0 44px rgba(255, 255, 255, 0.7);
 }
 
 .tagline {
@@ -233,7 +232,7 @@ body::after {
 .tagline strong {
 	font-weight: 400;
 	color: var(--bone);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+	border-bottom: 1px solid rgba(10, 10, 10, 0.45);
 }
 
 /* ------------------------------------------------------------------- list */
@@ -308,7 +307,7 @@ body::after {
 
 .row__hit:hover,
 .row__hit:focus-visible {
-	background: linear-gradient(90deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 58%);
+	background: linear-gradient(90deg, rgba(10, 10, 10, 0.07), rgba(10, 10, 10, 0) 58%);
 }
 
 .row__hit:hover::before,
@@ -317,7 +316,7 @@ body::after {
 }
 
 .row__hit:focus-visible {
-	outline: 1px solid rgba(255, 255, 255, 0.7);
+	outline: 1px solid rgba(10, 10, 10, 0.7);
 	outline-offset: 1px;
 }
 
@@ -394,7 +393,7 @@ body::after {
 	translate: -50% 10px;
 	padding: 10px 16px;
 	border: 1px solid var(--line);
-	background: rgba(0, 0, 0, 0.92);
+	background: rgba(255, 255, 255, 0.96);
 	color: var(--bone);
 	font-family: var(--mono);
 	font-size: 11px;
@@ -472,7 +471,7 @@ body::after {
 
 	.panel__img {
 		object-position: 34% 55%;
-		filter: grayscale(1) contrast(1.02) brightness(0.8);
+		filter: grayscale(1) contrast(1.04) brightness(0.98);
 	}
 
 	#globe {

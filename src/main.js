@@ -57,7 +57,9 @@ function randomMote(fromBottom) {
 
 function seed() {
 	const count = Math.max(40, Math.min(150, Math.round((width * height) / 13000)))
-	motes = Array.from({ length: count }, () => randomMote(true))
+	// start spread across the viewport: reduced motion never advances the loop, so
+	// motes seeded below the fold would never be seen
+	motes = Array.from({ length: count }, () => randomMote(false))
 }
 
 function resize() {
@@ -90,13 +92,13 @@ function draw(dt) {
 
 		// ash catches the light unevenly: a soft core plus a faint halo
 		ctx.beginPath()
-		ctx.fillStyle = `rgba(255, 255, 255, ${mote.alpha * 0.7})`
+		ctx.fillStyle = `rgba(10, 10, 10, ${mote.alpha * 0.7})`
 		ctx.arc(mote.x, mote.y, mote.r, 0, Math.PI * 2)
 		ctx.fill()
 
 		if (mote.r > 1.5) {
 			ctx.beginPath()
-			ctx.fillStyle = `rgba(255, 255, 255, ${mote.alpha * 0.1})`
+			ctx.fillStyle = `rgba(10, 10, 10, ${mote.alpha * 0.1})`
 			ctx.arc(mote.x, mote.y, mote.r * 3.6, 0, Math.PI * 2)
 			ctx.fill()
 		}
@@ -139,7 +141,7 @@ document.addEventListener('visibilitychange', () => {
 /* ------------------------------------------------------------------ globe */
 
 // A dot sphere: Fibonacci-distributed points drawn as tiny squares, shaded by
-// depth. White only, so it reads as part of the black page rather than an object
+// depth. Ink only, so it reads as part of the paper rather than an object
 // sitting on top of it. It turns slowly and tilts toward the pointer.
 const globe = document.getElementById('globe')
 
@@ -207,7 +209,7 @@ if (globe) {
 			// near-side points carry the shape; far-side points are a faint haze
 			const front = z2 > 0
 			const alpha = front ? (0.12 + depth * 0.46) * rim : depth * 0.07 * rim
-			gctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`
+			gctx.fillStyle = `rgba(10, 10, 10, ${alpha.toFixed(3)})`
 
 			const size = (front ? 1.1 : 0.7) + depth * 1.1
 			gctx.fillRect(cx + x1 * radius - size / 2, cy + y2 * radius - size / 2, size, size)
