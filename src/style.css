@@ -276,7 +276,9 @@ body::after {
 	gap: clamp(12px, 2vw, 24px);
 	width: 100%;
 	padding: clamp(15px, 2.3vh, 22px) clamp(4px, 1vw, 14px);
-	background: none;
+	/* vanilla fill: an opaque paper ground so no panel texture, screentone or
+	   sheen can read through the button */
+	background: var(--paper);
 	border: 0;
 	color: inherit;
 	font: inherit;
@@ -289,27 +291,10 @@ body::after {
 	-webkit-tap-highlight-color: transparent;
 }
 
-/* white rule on the left edge: fades in, nothing shifts */
-.row__hit::before {
-	content: '';
-	position: absolute;
-	left: 0;
-	top: 14%;
-	bottom: 14%;
-	width: 2px;
-	background: var(--bone);
-	opacity: 0;
-	transition: opacity 280ms ease;
-}
-
+/* flat tint on hover: no gradient, no pseudo-element bar, no wash */
 .row__hit:hover,
 .row__hit:focus-visible {
-	background: linear-gradient(90deg, rgba(10, 10, 10, 0.07), rgba(10, 10, 10, 0) 58%);
-}
-
-.row__hit:hover::before,
-.row__hit:focus-visible::before {
-	opacity: 1;
+	background: rgba(10, 10, 10, 0.045);
 }
 
 .row__hit:focus-visible {
