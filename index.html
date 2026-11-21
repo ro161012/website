@@ -254,6 +254,9 @@
 
 			.card__title {
 				margin: 0;
+				/* the r's left side bearing is wider than the subtitle's A, so pull
+				   the heading left by its optical inset to share one edge */
+				text-indent: -0.072em;
 				font-size: clamp(68px, 14.5vw, 132px);
 				font-weight: 600;
 				line-height: 0.86;
