@@ -305,22 +305,28 @@
 				cursor: pointer;
 				-webkit-tap-highlight-color: transparent;
 				touch-action: manipulation;
+				/* dock magnify: JS writes --dock-scale as the pointer travels */
+				--dock-scale: 1;
+				--lift: 0px;
+				translate: 0 var(--lift);
+				scale: var(--dock-scale);
 				transition:
 					background-color 240ms var(--ease),
 					border-color 240ms var(--ease),
 					box-shadow 320ms var(--ease),
-					transform 420ms var(--spring);
+					translate 420ms var(--spring),
+					scale 200ms var(--ease);
 			}
 
 			.btn:hover {
 				background: rgba(255, 255, 255, 0.08);
 				border-color: rgba(255, 255, 255, 0.15);
 				box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
-				transform: translateY(-1px);
+				--lift: -1px;
 			}
 
 			.btn:active {
-				transform: scale(0.975);
+				scale: calc(var(--dock-scale) * 0.975);
 				transition-duration: 120ms;
 			}
 
@@ -540,7 +546,14 @@
 				}
 
 				.btn:hover,
-				.btn:active,
+				.btn:active {
+					translate: none;
+				}
+
+				.btn:active {
+					scale: var(--dock-scale);
+				}
+
 				.btn:hover .btn__arrow {
 					transform: none;
 				}
@@ -790,6 +803,49 @@
 					},
 					{ passive: true }
 				)
+			}
+
+			/* ------------------------------------------------------------ dock */
+			/* the pill under the pointer grows, and its neighbours grow a little
+			   less the further they sit from it, so the list leans toward the
+			   cursor instead of only one button reacting */
+			const socialsEl = document.querySelector('.socials')
+			const socialBtnEls = socialsEl ? [...socialsEl.querySelectorAll('.btn')] : []
+
+			if (socialsEl && socialBtnEls.length && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+				const DOCK_MAX = 0.06
+				const DOCK_REACH = 2.4 // multiples of a pill's height
+				let dockY = null
+				let dockQueued = 0
+
+				const paintDock = () => {
+					dockQueued = 0
+					if (dockY === null) return
+					const top = socialsEl.getBoundingClientRect().top
+					for (const button of socialBtnEls) {
+						const center = button.offsetTop + button.offsetHeight / 2
+						const reach = button.offsetHeight * DOCK_REACH
+						const distance = Math.abs(dockY - top - center)
+						const pull = Math.max(0, 1 - distance / reach)
+						button.style.setProperty('--dock-scale', (1 + DOCK_MAX * pull * pull).toFixed(3))
+					}
+				}
+
+				const resetDock = () => {
+					dockY = null
+					for (const button of socialBtnEls) button.style.removeProperty('--dock-scale')
+				}
+
+				socialsEl.addEventListener(
+					'pointermove',
+					(event) => {
+						dockY = event.clientY
+						if (!dockQueued) dockQueued = requestAnimationFrame(paintDock)
+					},
+					{ passive: true }
+				)
+				socialsEl.addEventListener('pointerleave', resetDock)
+				window.addEventListener('blur', resetDock)
 			}
 
 			/* ------------------------------------------------------ refraction */
