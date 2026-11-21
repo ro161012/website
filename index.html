@@ -231,8 +231,9 @@
 
 			#clock {
 				display: inline-block;
-				min-width: 7ch;
+				min-width: 10ch;
 				text-align: right;
+				white-space: nowrap;
 			}
 
 			/* -------------------------------------------------------------- card */
@@ -717,11 +718,17 @@
 
 			/* ----------------------------------------------------------- clock */
 			const clockEl = document.getElementById('clock')
-			const pad = (n) => String(n).padStart(2, '0')
+			/* the viewer's own time zone, always in a 12-hour clock */
+			const clockFormat = new Intl.DateTimeFormat(undefined, {
+				hour: 'numeric',
+				minute: '2-digit',
+				second: '2-digit',
+				hour12: true,
+			})
 
 			function paintClock() {
 				const now = new Date()
-				clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+				clockEl.textContent = clockFormat.format(now)
 				clockEl.dateTime = now.toISOString()
 			}
 
