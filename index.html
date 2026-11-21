@@ -922,7 +922,7 @@
 			/* STEP 5: optional, and only if the module is actually reachable. A
 			   HEAD probe keeps a missing CDN package from logging a fetch error. */
 			async function initWebglLens() {
-				if (!CONFIG.webglLens || calm || !finePointer) return
+				if (!CONFIG.webglLens || !finePointer) return
 				const probe = await fetch(CONFIG.webglSrc, { method: 'HEAD' }).catch(() => null)
 				if (!probe || !probe.ok) return
 
