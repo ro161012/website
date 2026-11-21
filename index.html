@@ -940,14 +940,16 @@
 					const LiquidGlass = module.LiquidGlass || module.default
 					if (!LiquidGlass || typeof LiquidGlass.init !== 'function' || !root || !hero) return
 
+					/* the bevel's fresnel/specular lighting drew a second highlight rim
+					   inside the card; the CSS rim and sheen already carry the material */
 					hero.dataset.config = JSON.stringify({
 						cornerRadius: 32,
 						zRadius: 28,
 						refraction: 0.69,
 						chromAberration: 0.05,
 						edgeHighlight: 0.1,
-						fresnel: 1,
-						specular: 0.4,
+						fresnel: 0,
+						specular: 0,
 						blurAmount: 0.1,
 						shadowOpacity: 0.3,
 					})
