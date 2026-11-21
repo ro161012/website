@@ -102,9 +102,25 @@
 				inset: 0;
 				z-index: 1;
 				pointer-events: none;
+				/* a dark pool under the card keeps white text above 4.5:1 while the
+				   panel itself stays readable toward the edges of the screen */
 				background:
-					radial-gradient(120% 90% at 50% 16%, rgba(255, 255, 255, 0.05), transparent 62%),
-					linear-gradient(180deg, rgba(6, 7, 9, 0.64) 0%, rgba(6, 7, 9, 0.5) 42%, rgba(6, 7, 9, 0.74) 100%);
+					radial-gradient(
+						58% 54% at 50% 54%,
+						rgba(6, 7, 9, 0.78) 0%,
+						rgba(6, 7, 9, 0.6) 44%,
+						rgba(6, 7, 9, 0.16) 80%,
+						transparent 100%
+					),
+					linear-gradient(180deg, rgba(6, 7, 9, 0.52) 0%, rgba(6, 7, 9, 0.3) 45%, rgba(6, 7, 9, 0.6) 100%);
+			}
+
+			/* the generated SVG filters are decorative; keep them out of layout */
+			#filter-defs {
+				position: absolute;
+				width: 0;
+				height: 0;
+				overflow: hidden;
 			}
 
 			/* ------------------------------------------------------------ shell */
@@ -123,8 +139,11 @@
 				isolation: isolate;
 				border-radius: var(--card-radius);
 				background: rgba(255, 255, 255, var(--glass-tint));
-				-webkit-backdrop-filter: blur(var(--glass-blur-fallback)) saturate(1.4);
-				backdrop-filter: blur(var(--glass-blur-fallback)) saturate(1.4);
+				/* JS swaps the SVG lens into --glass-use, so the media queries below
+				   can still switch the whole effect off */
+				--glass-use: blur(var(--glass-blur-fallback)) saturate(1.4);
+				-webkit-backdrop-filter: var(--glass-use);
+				backdrop-filter: var(--glass-use);
 				box-shadow:
 					inset 1px 1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.55)),
 					inset -1px -1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.16)),
@@ -488,8 +507,8 @@
 			@media (prefers-reduced-transparency: reduce) {
 				.glass {
 					background: #14161a;
-					-webkit-backdrop-filter: none;
-					backdrop-filter: none;
+					-webkit-backdrop-filter: none !important;
+					backdrop-filter: none !important;
 					box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
 				}
 
@@ -517,8 +536,8 @@
 				}
 
 				.glass {
-					-webkit-backdrop-filter: blur(10px) saturate(1.2);
-					backdrop-filter: blur(10px) saturate(1.2);
+					-webkit-backdrop-filter: blur(10px) saturate(1.2) !important;
+					backdrop-filter: blur(10px) saturate(1.2) !important;
 				}
 
 				.glass::after {
@@ -903,8 +922,7 @@
 					const id = `glass-lens-${index}`
 					markup += buildFilter(el, id)
 					if (!markup) return
-					el.style.setProperty('-webkit-backdrop-filter', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
-					el.style.setProperty('backdrop-filter', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
+					el.style.setProperty('--glass-use', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
 					el.dataset.lens = id
 				})
 				svgDefs.innerHTML = markup
@@ -921,8 +939,7 @@
 				const refresh = () => {
 					svgDefs.innerHTML = ''
 					glassEls.forEach((el) => {
-						el.style.removeProperty('backdrop-filter')
-						el.style.removeProperty('-webkit-backdrop-filter')
+						el.style.removeProperty('--glass-use')
 					})
 					applyRefraction()
 				}
