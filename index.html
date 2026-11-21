@@ -5,61 +5,628 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>rxbow</title>
 		<meta name="description" content="rxbow — also known as ro161012. TikTok, Discord and NameMC." />
-		<meta name="theme-color" content="#ffffff" />
-		<meta name="color-scheme" content="light" />
+		<meta name="theme-color" content="#0a0b0d" />
+		<meta name="color-scheme" content="dark light" />
 		<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-		<link rel="preload" as="image" href="./berserk-panel.webp" />
+		<link rel="preload" as="image" href="/berserk-panel.webp" fetchpriority="high" />
 
-		<meta property="og:title" content="rxbow" />
-		<meta property="og:description" content="rxbow — also known as ro161012." />
-		<meta property="og:type" content="website" />
+		<style>
+			/* ---------------------------------------------------------- tokens */
+			/* Every optical parameter lives here so the material can be tuned
+			   without touching a rule. Values from jcm-developer/liquid-glass-components. */
+			:root {
+				--glass-tint: 0.08; /* white wash sitting on the glass, 0–1 */
+				--glass-rim: 0.6; /* specular edge strength, 0–1 */
+				--glass-blur: 2px; /* blur used on top of real refraction */
+				--glass-blur-fallback: 8px; /* blur used when refraction is unavailable */
+				--glass-refraction: 48; /* px of edge displacement in the SVG lens */
+				--glass-bezel: 22px; /* px band at the rim that bends the backdrop */
+				--glass-chroma: 0.5; /* chromatic fringe width, 0–1 */
+				--glass-target: 44px; /* minimum touch target */
 
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&family=Pirata+One&display=swap"
-			rel="stylesheet"
-		/>
+				--fg: rgba(255, 255, 255, 0.96);
+				--fg-dim: rgba(255, 255, 255, 0.66);
+				--fg-faint: rgba(255, 255, 255, 0.44);
+				--card-radius: 32px;
+				--pill-radius: 999px;
+				--spring: linear(
+					0,
+					0.014,
+					0.052 2.3%,
+					0.184 4.6%,
+					0.66 10.4%,
+					0.902 14%,
+					1.03 18%,
+					1.09 21.6%,
+					1.114 25.9%,
+					1.111 29.6%,
+					1.081 35.6%,
+					1.005 45.6%,
+					0.971 51.1%,
+					0.961 56.4%,
+					0.973 63.2%,
+					1.001 72.4%,
+					1.012 82.5%,
+					1 100%
+				); /* springy settle for presses and lifts */
+				--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+			}
+
+			html,
+			body {
+				height: 100%;
+			}
+
+			body {
+				margin: 0;
+				background: #07080a;
+				color: var(--fg);
+				font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, ui-sans-serif, system-ui,
+					'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+				font-size: 16px;
+				line-height: 1.4;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+				overflow-x: hidden;
+				overflow-y: auto;
+			}
+
+			::selection {
+				background: rgba(255, 255, 255, 0.9);
+				color: #0a0b0d;
+			}
+
+			/* --------------------------------------------------------- backdrop */
+			/* STEP 1 — the panel is never hidden; the scrim only deepens it so
+			   white text on glass clears 4.5:1 wherever the artwork is pale. */
+			.backdrop {
+				position: fixed;
+				inset: 0;
+				z-index: 0;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				object-position: 50% 50%;
+				pointer-events: none;
+				user-select: none;
+			}
+
+			.scrim {
+				position: fixed;
+				inset: 0;
+				z-index: 1;
+				pointer-events: none;
+				background:
+					radial-gradient(120% 90% at 50% 16%, rgba(255, 255, 255, 0.05), transparent 62%),
+					linear-gradient(180deg, rgba(6, 7, 9, 0.64) 0%, rgba(6, 7, 9, 0.5) 42%, rgba(6, 7, 9, 0.74) 100%);
+			}
+
+			/* ------------------------------------------------------------ shell */
+			#root {
+				position: relative;
+				min-height: 100svh;
+				display: grid;
+				grid-template-rows: auto 1fr;
+				padding: clamp(16px, 3vh, 28px) clamp(16px, 4vw, 36px) clamp(20px, 4vh, 40px);
+			}
+
+			/* ----------------------------------------------------------- glass */
+			/* STEP 3 — the material that works in every browser. */
+			.glass {
+				position: relative;
+				isolation: isolate;
+				border-radius: var(--card-radius);
+				background: rgba(255, 255, 255, var(--glass-tint));
+				-webkit-backdrop-filter: blur(var(--glass-blur-fallback)) saturate(1.4);
+				backdrop-filter: blur(var(--glass-blur-fallback)) saturate(1.4);
+				box-shadow:
+					inset 1px 1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.55)),
+					inset -1px -1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.16)),
+					inset 0 0 28px rgba(255, 255, 255, calc(var(--glass-rim) * 0.06)),
+					0 32px 70px rgba(0, 0, 0, 0.42),
+					0 10px 24px rgba(0, 0, 0, 0.26);
+			}
+
+			/* specular sheen that follows the pointer */
+			.glass::before {
+				content: '';
+				position: absolute;
+				inset: 0;
+				z-index: 1;
+				border-radius: inherit;
+				pointer-events: none;
+				background: radial-gradient(
+					180px 130px at var(--mx, 26%) var(--my, 0%),
+					rgba(255, 255, 255, 0.42),
+					rgba(255, 255, 255, 0.08) 40%,
+					transparent 70%
+				);
+				opacity: 0.9;
+				mix-blend-mode: screen;
+			}
+
+			/* gradient rim: bright top-left, dim bottom-right */
+			.glass::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				z-index: 2;
+				border-radius: inherit;
+				padding: 1px;
+				pointer-events: none;
+				background: linear-gradient(
+					155deg,
+					rgba(255, 255, 255, var(--glass-rim)) 0%,
+					rgba(255, 255, 255, calc(var(--glass-rim) * 0.22)) 26%,
+					rgba(255, 255, 255, calc(var(--glass-rim) * 0.08)) 58%,
+					rgba(255, 255, 255, calc(var(--glass-rim) * 0.42)) 100%
+				);
+				-webkit-mask:
+					linear-gradient(#000 0 0) content-box,
+					linear-gradient(#000 0 0);
+				-webkit-mask-composite: xor;
+				mask:
+					linear-gradient(#000 0 0) content-box,
+					linear-gradient(#000 0 0);
+				mask-composite: exclude;
+			}
+
+			@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+				.glass {
+					background: rgba(20, 22, 27, 0.78);
+				}
+			}
+
+			/* ------------------------------------------------------------ clock */
+			.clock {
+				z-index: 3;
+				grid-row: 1;
+				justify-self: end;
+				display: inline-flex;
+				align-items: center;
+				gap: 10px;
+				height: var(--glass-target);
+				padding: 0 18px;
+				border-radius: var(--pill-radius);
+				color: var(--fg);
+				font-size: 13px;
+				font-weight: 600;
+				letter-spacing: 0.14em;
+				font-variant-numeric: tabular-nums;
+				animation: rise 700ms var(--spring) both;
+			}
+
+			/* keep the clock's text above the sheen and the rim */
+			.clock > * {
+				position: relative;
+				z-index: 3;
+			}
+
+			.clock__dot {
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: rgba(255, 255, 255, 0.9);
+				box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+			}
+
+			#clock {
+				display: inline-block;
+				min-width: 7ch;
+				text-align: right;
+			}
+
+			/* -------------------------------------------------------------- card */
+			.card {
+				z-index: 3;
+				grid-row: 2;
+				place-self: center;
+				width: min(560px, 100%);
+				padding: clamp(24px, 3.6vw, 40px);
+				border-radius: var(--card-radius);
+				color: var(--fg);
+				animation: rise 900ms var(--spring) both;
+			}
+
+			.card > * {
+				position: relative;
+				z-index: 3;
+			}
+
+			.card__title {
+				margin: 0;
+				font-size: clamp(68px, 14.5vw, 132px);
+				font-weight: 600;
+				line-height: 0.86;
+				letter-spacing: -0.045em;
+				background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.72) 100%);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+			}
+
+			.card__sub {
+				margin: clamp(10px, 1.6vh, 14px) 0 0;
+				font-size: clamp(15px, 1.5vw, 17px);
+				font-weight: 500;
+				letter-spacing: -0.005em;
+				color: var(--fg-dim);
+			}
+
+			.card__sub strong {
+				font-weight: 600;
+				color: var(--fg);
+			}
+
+			/* ---------------------------------------------------------- socials */
+			/* Flat fills inside the glass card — never glass on glass. */
+			.socials {
+				list-style: none;
+				margin: clamp(20px, 3vh, 28px) 0 0;
+				padding: 0;
+				display: grid;
+				gap: 10px;
+			}
+
+			.btn {
+				display: grid;
+				grid-template-columns: 28px 22px minmax(0, 1fr) auto;
+				align-items: center;
+				gap: clamp(10px, 2vw, 16px);
+				width: 100%;
+				min-height: calc(var(--glass-target) + 8px);
+				padding: 10px 16px 10px 14px;
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				border-radius: var(--pill-radius);
+				background: rgba(255, 255, 255, 0.07);
+				color: inherit;
+				font: inherit;
+				text-align: left;
+				text-decoration: none;
+				cursor: pointer;
+				-webkit-tap-highlight-color: transparent;
+				touch-action: manipulation;
+				transition:
+					background-color 240ms var(--ease),
+					border-color 240ms var(--ease),
+					box-shadow 320ms var(--ease),
+					transform 420ms var(--spring);
+			}
+
+			.btn:hover {
+				background: rgba(255, 255, 255, 0.12);
+				border-color: rgba(255, 255, 255, 0.18);
+				box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+				transform: translateY(-1px);
+			}
+
+			.btn:active {
+				transform: scale(0.975);
+				transition-duration: 120ms;
+			}
+
+			.btn:focus-visible {
+				outline: 2px solid rgba(255, 255, 255, 0.92);
+				outline-offset: 3px;
+			}
+
+			/* the optional WebGL lens injects its own canvas as the first child; keep it
+			   under the card's text and buttons, never over them */
+			.glass > canvas {
+				z-index: 0 !important;
+				pointer-events: none;
+			}
+
+			.btn__no {
+				font-size: 11px;
+				font-weight: 600;
+				letter-spacing: 0.08em;
+				font-variant-numeric: tabular-nums;
+				color: var(--fg-faint);
+			}
+
+			.btn__icon {
+				display: grid;
+				place-items: center;
+				color: rgba(255, 255, 255, 0.86);
+			}
+
+			.btn__icon svg {
+				display: block;
+				width: 18px;
+				height: 18px;
+			}
+
+			.btn__text {
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+				min-width: 0;
+			}
+
+			.btn__label {
+				font-size: 15px;
+				font-weight: 600;
+				letter-spacing: -0.01em;
+				color: var(--fg);
+			}
+
+			.btn__sub {
+				font-size: 12px;
+				font-weight: 500;
+				color: var(--fg-dim);
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.btn__arrow {
+				font-size: 13px;
+				line-height: 1;
+				color: var(--fg-faint);
+				transition:
+					color 240ms var(--ease),
+					transform 420ms var(--spring);
+			}
+
+			.btn:hover .btn__arrow,
+			.btn:focus-visible .btn__arrow {
+				color: var(--fg);
+				transform: translate(1px, -1px);
+			}
+
+			/* ------------------------------------------------------------ toast */
+			.toast {
+				position: fixed;
+				left: 50%;
+				bottom: max(26px, env(safe-area-inset-bottom));
+				z-index: 50;
+				translate: -50% 12px;
+				padding: 12px 20px;
+				border: 1px solid rgba(255, 255, 255, 0.22);
+				border-radius: var(--pill-radius);
+				background: rgba(255, 255, 255, 0.14);
+				-webkit-backdrop-filter: blur(14px) saturate(1.6);
+				backdrop-filter: blur(14px) saturate(1.6);
+				box-shadow:
+					inset 0 1px 0 rgba(255, 255, 255, 0.4),
+					0 14px 40px rgba(0, 0, 0, 0.35);
+				color: #fff;
+				font-size: 13px;
+				font-weight: 600;
+				letter-spacing: 0.06em;
+				opacity: 0;
+				pointer-events: none;
+				transition:
+					opacity 260ms var(--ease),
+					translate 460ms var(--spring);
+			}
+
+			.toast.is-visible {
+				opacity: 1;
+				translate: -50% 0;
+			}
+
+			/* --------------------------------------------------------- keyframes */
+			@keyframes rise {
+				from {
+					opacity: 0;
+					transform: translateY(16px) scale(0.99);
+				}
+				to {
+					opacity: 1;
+					transform: none;
+				}
+			}
+
+			/* -------------------------------------------------------- responsive */
+			@media (max-width: 420px) {
+				#root {
+					padding: 14px 14px 18px;
+				}
+
+				.card {
+					padding: 22px 18px;
+				}
+
+				.card__title {
+					font-size: clamp(64px, 19vw, 96px);
+				}
+
+				.btn {
+					grid-template-columns: 24px 20px minmax(0, 1fr) auto;
+					gap: 10px;
+					padding: 10px 14px 10px 12px;
+				}
+
+				.btn__label {
+					font-size: 14px;
+				}
+			}
+
+			@media (max-height: 620px) and (min-width: 421px) {
+				.card {
+					padding: 22px 26px;
+				}
+
+				.card__title {
+					font-size: clamp(56px, 9vw, 88px);
+				}
+
+				.socials {
+					margin-top: 16px;
+					gap: 8px;
+				}
+
+				.btn {
+					min-height: 42px;
+					padding-top: 8px;
+					padding-bottom: 8px;
+				}
+			}
+
+			/* ------------------------------------------------------ accessibility */
+			@media (prefers-color-scheme: light) {
+				:root {
+					--glass-tint: 0.12;
+					--glass-rim: 0.75;
+				}
+
+				.scrim {
+					background:
+						radial-gradient(120% 90% at 50% 16%, rgba(255, 255, 255, 0.05), transparent 62%),
+						linear-gradient(180deg, rgba(6, 7, 9, 0.6) 0%, rgba(6, 7, 9, 0.46) 44%, rgba(6, 7, 9, 0.7) 100%);
+				}
+			}
+
+			@media (prefers-reduced-transparency: reduce) {
+				.glass {
+					background: #14161a;
+					-webkit-backdrop-filter: none;
+					backdrop-filter: none;
+					box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+				}
+
+				.glass::before {
+					display: none;
+				}
+
+				.glass::after {
+					background: rgba(255, 255, 255, 0.28);
+				}
+
+				.toast {
+					background: #1b1e23;
+					-webkit-backdrop-filter: none;
+					backdrop-filter: none;
+				}
+			}
+
+			@media (prefers-contrast: more) {
+				:root {
+					--glass-tint: 0.14;
+					--glass-rim: 1;
+					--fg-dim: rgba(255, 255, 255, 0.86);
+					--fg-faint: rgba(255, 255, 255, 0.72);
+				}
+
+				.glass {
+					-webkit-backdrop-filter: blur(10px) saturate(1.2);
+					backdrop-filter: blur(10px) saturate(1.2);
+				}
+
+				.glass::after {
+					background: #fff;
+					opacity: 0.9;
+				}
+
+				.btn {
+					border-color: rgba(255, 255, 255, 0.6);
+				}
+
+				.btn__sub {
+					color: #fff;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*,
+				*::before,
+				*::after {
+					animation-duration: 0.001ms !important;
+					animation-delay: 0ms !important;
+					transition-duration: 0.001ms !important;
+				}
+
+				.card,
+				.clock {
+					animation: none;
+				}
+
+				.btn:hover,
+				.btn:active,
+				.btn:hover .btn__arrow {
+					transform: none;
+				}
+			}
+
+			@media (forced-colors: active) {
+				.backdrop,
+				.scrim,
+				.glass::before,
+				.glass::after {
+					display: none;
+				}
+
+				body {
+					background: Canvas;
+					color: CanvasText;
+				}
+
+				.glass {
+					background: Canvas;
+					border: 1px solid CanvasText;
+					-webkit-backdrop-filter: none;
+					backdrop-filter: none;
+					box-shadow: none;
+				}
+
+				.btn {
+					background: Canvas;
+					border: 1px solid ButtonText;
+					color: ButtonText;
+				}
+
+				.btn:focus-visible {
+					outline: 2px solid Highlight;
+				}
+
+				.toast {
+					background: Canvas;
+					color: CanvasText;
+					border: 1px solid CanvasText;
+					-webkit-backdrop-filter: none;
+					backdrop-filter: none;
+				}
+			}
+		</style>
 	</head>
 
 	<body>
-		<div class="panel" aria-hidden="true">
-			<div class="panel__layer">
-				<img class="panel__img" src="./berserk-panel.webp" alt="" width="1920" height="1080" fetchpriority="high" decoding="async" />
+		<!-- STEP 5 structure: #root holds the backdrop plus the glass elements as
+		     direct children, so the lens can capture what sits behind them. -->
+		<div id="root">
+			<img
+				class="backdrop"
+				src="/berserk-panel.webp"
+				alt=""
+				width="1920"
+				height="1080"
+				decoding="async"
+				fetchpriority="high"
+			/>
+			<div class="scrim" aria-hidden="true"></div>
+
+			<div class="clock glass" aria-label="Local time">
+				<span class="clock__dot" aria-hidden="true"></span>
+				<time id="clock" datetime="">--:--:--</time>
 			</div>
-			<div class="panel__tone"></div>
-			<div class="panel__sheen"></div>
-		</div>
-		<canvas id="globe" aria-hidden="true"></canvas>
 
-		<main class="page">
-			<header class="top">
-				<div class="top__clock">
-					<span class="top__tz" id="tz">--</span>
-					<time id="clock">--:--:--</time>
-				</div>
-			</header>
+			<main class="card glass" id="hero">
+				<h1 class="card__title">rxbow</h1>
+				<p class="card__sub">Also known as <strong>ro161012</strong>.</p>
 
-			<section class="hero">
-				<h1 class="name"><span class="name__cut">r</span>xbow</h1>
-				<p class="tagline">Also known as <strong>ro161012</strong>.</p>
-			</section>
-
-			<section class="list" aria-labelledby="socials-title">
-				<div class="list__head">
-					<h2 class="list__title" id="socials-title">Socials</h2>
-				</div>
-
-				<ul class="rows">
-					<li class="row">
-						<a
-							class="row__hit"
-							href="https://www.tiktok.com/@rxbowed"
-							target="_blank"
-							rel="me noopener noreferrer"
-						>
-							<span class="row__no">01</span>
-							<span class="row__icon" aria-hidden="true">
+				<ul class="socials">
+					<li>
+						<a class="btn" href="https://www.tiktok.com/@rxbowed" target="_blank" rel="noopener">
+							<span class="btn__no">01</span>
+							<span class="btn__icon" aria-hidden="true">
 								<svg viewBox="0 0 24 24">
 									<path
 										fill="currentColor"
@@ -67,18 +634,23 @@
 									/>
 								</svg>
 							</span>
-							<span class="row__text">
-								<span class="row__label">TikTok</span>
-								<span class="row__sub">@rxbowed</span>
+							<span class="btn__text">
+								<span class="btn__label">TikTok</span>
+								<span class="btn__sub">@rxbowed</span>
 							</span>
-							<span class="row__arrow" aria-hidden="true">↗</span>
+							<span class="btn__arrow" aria-hidden="true">↗</span>
 						</a>
 					</li>
 
-					<li class="row">
-						<button class="row__hit" type="button" data-copy="ro161012">
-							<span class="row__no">02</span>
-							<span class="row__icon" aria-hidden="true">
+					<li>
+						<button
+							class="btn"
+							type="button"
+							data-copy="ro161012"
+							aria-label="Copy Discord username ro161012"
+						>
+							<span class="btn__no">02</span>
+							<span class="btn__icon" aria-hidden="true">
 								<svg viewBox="0 0 24 24">
 									<path
 										fill="currentColor"
@@ -86,44 +658,312 @@
 									/>
 								</svg>
 							</span>
-							<span class="row__text">
-								<span class="row__label">Discord</span>
-								<span class="row__sub">ro161012</span>
+							<span class="btn__text">
+								<span class="btn__label">Discord</span>
+								<span class="btn__sub">ro161012</span>
 							</span>
-							<span class="row__arrow" aria-hidden="true">⧉</span>
+							<span class="btn__arrow" aria-hidden="true">
+								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6">
+									<rect x="9" y="9" width="11" height="11" rx="2.5" />
+									<path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+								</svg>
+							</span>
 						</button>
 					</li>
 
-					<li class="row">
-						<a
-							class="row__hit"
-							href="https://namemc.com/profile/rxbow"
-							target="_blank"
-							rel="me noopener noreferrer"
-						>
-							<span class="row__no">03</span>
-							<span class="row__icon" aria-hidden="true">
+					<li>
+						<a class="btn" href="https://namemc.com/profile/rxbow" target="_blank" rel="noopener">
+							<span class="btn__no">03</span>
+							<span class="btn__icon" aria-hidden="true">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-									<path
-										d="M3.2 8.4a2.2 2.2 0 0 1 2.2-2.2h8.3l6.1 5.8-6.1 5.8H5.4a2.2 2.2 0 0 1-2.2-2.2Z"
-										stroke-linejoin="round"
-									/>
+									<path d="M3.2 8.4a2.2 2.2 0 0 1 2.2-2.2h8.3l6.1 5.8-6.1 5.8H5.4a2.2 2.2 0 0 1-2.2-2.2Z" stroke-linejoin="round" />
 									<circle cx="8.2" cy="12" r="1.6" />
 								</svg>
 							</span>
-							<span class="row__text">
-								<span class="row__label">NameMC</span>
-								<span class="row__sub">rxbow</span>
+							<span class="btn__text">
+								<span class="btn__label">NameMC</span>
+								<span class="btn__sub">rxbow</span>
 							</span>
-							<span class="row__arrow" aria-hidden="true">↗</span>
+							<span class="btn__arrow" aria-hidden="true">↗</span>
 						</a>
 					</li>
 				</ul>
-			</section>
-		</main>
+			</main>
+		</div>
 
 		<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-		<script type="module" src="/src/main.js"></script>
+		<!-- STEP 4: per-element displacement filters are generated into here. -->
+		<svg id="filter-defs" width="0" height="0" aria-hidden="true" focusable="false"></svg>
+
+		<script type="module">
+			/* --------------------------------------------------------- config */
+			const CONFIG = {
+				refraction: true, // real edge refraction on Chromium with a fine pointer
+				refractionStrength: 48, // px of displacement at the rim (--glass-refraction)
+				bezel: 22, // px band at the rim that bends the backdrop (--glass-bezel)
+				chroma: 0.5, // chromatic fringe width, 0–1 (--glass-chroma)
+				blur: 2, // px of blur layered on the refraction (--glass-blur)
+				sheen: true, // pointer-tracked specular highlight
+				webglLens: true, // optional liquidglass lens for the card
+				webglSrc: 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass/dist/index.js',
+			}
+
+			const root = document.getElementById('root')
+			const hero = document.getElementById('hero')
+			const glassEls = [...document.querySelectorAll('.glass')]
+			const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+			/* ----------------------------------------------------------- clock */
+			const clockEl = document.getElementById('clock')
+			const pad = (n) => String(n).padStart(2, '0')
+
+			function paintClock() {
+				const now = new Date()
+				clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+				clockEl.dateTime = now.toISOString()
+			}
+
+			// Re-align to the wall-clock second instead of drifting on a 1000ms interval.
+			function tick() {
+				paintClock()
+				window.setTimeout(tick, 1000 - (Date.now() % 1000) + 8)
+			}
+
+			paintClock()
+			window.setTimeout(tick, 1000 - (Date.now() % 1000) + 8)
+			document.addEventListener('visibilitychange', () => {
+				if (!document.hidden) paintClock()
+			})
+
+			/* ----------------------------------------------------------- toast */
+			const toast = document.getElementById('toast')
+			let toastTimer = 0
+
+			function showToast(message) {
+				toast.textContent = message
+				toast.classList.add('is-visible')
+				window.clearTimeout(toastTimer)
+				toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 1800)
+			}
+
+			async function copyText(text) {
+				try {
+					if (navigator.clipboard && window.isSecureContext) {
+						await navigator.clipboard.writeText(text)
+						return true
+					}
+				} catch {
+					/* fall through to the execCommand path */
+				}
+				try {
+					const field = document.createElement('textarea')
+					field.value = text
+					field.setAttribute('readonly', '')
+					field.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0'
+					document.body.appendChild(field)
+					field.select()
+					field.setSelectionRange(0, text.length)
+					const ok = document.execCommand('copy')
+					field.remove()
+					return ok
+				} catch {
+					return false
+				}
+			}
+
+			for (const button of document.querySelectorAll('[data-copy]')) {
+				button.addEventListener('click', async () => {
+					const copied = await copyText(button.dataset.copy || '')
+					showToast(copied ? 'Copied' : 'Copy failed')
+				})
+			}
+
+			/* ----------------------------------------------------------- sheen */
+			if (CONFIG.sheen && !calm) {
+				let queued = 0
+				let pointer = null
+
+				const paintSheen = () => {
+					queued = 0
+					if (!pointer) return
+					for (const el of glassEls) {
+						const rect = el.getBoundingClientRect()
+						if (!rect.width || !rect.height) continue
+						const x = ((pointer.x - rect.left) / rect.width) * 100
+						const y = ((pointer.y - rect.top) / rect.height) * 100
+						el.style.setProperty('--mx', `${x.toFixed(2)}%`)
+						el.style.setProperty('--my', `${y.toFixed(2)}%`)
+					}
+				}
+
+				window.addEventListener(
+					'pointermove',
+					(event) => {
+						pointer = { x: event.clientX, y: event.clientY }
+						if (!queued) queued = requestAnimationFrame(paintSheen)
+					},
+					{ passive: true }
+				)
+			}
+
+			/* ------------------------------------------------------ refraction */
+			/* STEP 4: a rounded-rect distance field becomes a displacement map;
+			   feDisplacementMap bends the backdrop at the rim and leaves the
+			   centre flat. Chromium only — everything else keeps the blur. */
+			const isChromium =
+				!!navigator.userAgentData?.brands?.some((brand) => /Chromium|Google Chrome|Microsoft Edge/.test(brand.brand)) ||
+				(/Chrome\//.test(navigator.userAgent) && !/Firefox|Safari\//.test(navigator.userAgent))
+			const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+			const svgDefs = document.getElementById('filter-defs')
+
+			function displacementMap(width, height, radius, bezel) {
+				const scale = Math.min(1, 420 / Math.max(width, height))
+				const w = Math.max(8, Math.round(width * scale))
+				const h = Math.max(8, Math.round(height * scale))
+				const band = Math.max(1, bezel * scale)
+				const r = Math.min(radius * scale, Math.min(w, h) / 2)
+
+				const canvas = document.createElement('canvas')
+				canvas.width = w
+				canvas.height = h
+				const ctx = canvas.getContext('2d')
+				const image = ctx.createImageData(w, h)
+				const data = image.data
+
+				const sdf = (x, y) => {
+					const qx = Math.abs(x - w / 2) - (w / 2 - r)
+					const qy = Math.abs(y - h / 2) - (h / 2 - r)
+					return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r
+				}
+
+				for (let y = 0; y < h; y++) {
+					for (let x = 0; x < w; x++) {
+						const i = (y * w + x) * 4
+						const distance = sdf(x + 0.5, y + 0.5)
+						const inside = distance < 0 ? Math.min(1, -distance / band) : 0
+						const bend = (1 - inside) * (1 - inside)
+
+						let nx = sdf(x + 1.5, y + 0.5) - sdf(x - 0.5, y + 0.5)
+						let ny = sdf(x + 0.5, y + 1.5) - sdf(x + 0.5, y - 0.5)
+						const len = Math.hypot(nx, ny) || 1
+						nx /= len
+						ny /= len
+
+						data[i] = 128 - nx * bend * 127
+						data[i + 1] = 128 - ny * bend * 127
+						data[i + 2] = 128
+						data[i + 3] = 255
+					}
+				}
+
+				ctx.putImageData(image, 0, 0)
+				return canvas.toDataURL('image/png')
+			}
+
+			function buildFilter(el, id) {
+				const rect = el.getBoundingClientRect()
+				if (!rect.width || !rect.height) return ''
+				const width = Math.round(rect.width)
+				const height = Math.round(rect.height)
+				const radius = el.classList.contains('clock') ? height / 2 : 32
+				const map = displacementMap(width, height, radius, CONFIG.bezel)
+				const scale = CONFIG.refractionStrength
+				const fringe = Math.max(0.5, scale * 0.05 * CONFIG.chroma)
+
+				return `
+					<filter id="${id}" x="0" y="0" width="${width}" height="${height}"
+						filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse"
+						color-interpolation-filters="sRGB">
+						<feImage href="${map}" x="0" y="0" width="${width}" height="${height}"
+							preserveAspectRatio="none" result="map" />
+						<feDisplacementMap in="SourceGraphic" in2="map" scale="${scale + fringe}"
+							xChannelSelector="R" yChannelSelector="G" result="dr" />
+						<feDisplacementMap in="SourceGraphic" in2="map" scale="${scale}"
+							xChannelSelector="R" yChannelSelector="G" result="dg" />
+						<feDisplacementMap in="SourceGraphic" in2="map" scale="${scale - fringe}"
+							xChannelSelector="R" yChannelSelector="G" result="db" />
+						<feColorMatrix in="dr" type="matrix"
+							values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" result="r" />
+						<feColorMatrix in="dg" type="matrix"
+							values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 0 1" result="g" />
+						<feColorMatrix in="db" type="matrix"
+							values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 0 1" result="b" />
+						<feBlend in="r" in2="g" mode="screen" result="rg" />
+						<feBlend in="rg" in2="b" mode="screen" />
+					</filter>`
+			}
+
+			function applyRefraction() {
+				if (!isChromium || !finePointer) return
+				if (!CSS.supports('backdrop-filter', 'url(#x)') && !CSS.supports('-webkit-backdrop-filter', 'url(#x)')) return
+
+				let markup = ''
+				glassEls.forEach((el, index) => {
+					const id = `glass-lens-${index}`
+					markup += buildFilter(el, id)
+					if (!markup) return
+					el.style.setProperty('-webkit-backdrop-filter', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
+					el.style.setProperty('backdrop-filter', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
+					el.dataset.lens = id
+				})
+				svgDefs.innerHTML = markup
+			}
+
+			if (CONFIG.refraction && isChromium && finePointer) {
+				const debounce = (fn) => {
+					let timer = 0
+					return () => {
+						window.clearTimeout(timer)
+						timer = window.setTimeout(fn, 180)
+					}
+				}
+				const refresh = () => {
+					svgDefs.innerHTML = ''
+					glassEls.forEach((el) => {
+						el.style.removeProperty('backdrop-filter')
+						el.style.removeProperty('-webkit-backdrop-filter')
+					})
+					applyRefraction()
+				}
+				window.addEventListener('resize', debounce(refresh), { passive: true })
+				document.fonts?.ready.then(refresh).catch(() => {})
+				applyRefraction()
+			}
+
+			/* ------------------------------------------------------- webgl lens */
+			/* STEP 5: optional, and only if the module is actually reachable. A
+			   HEAD probe keeps a missing CDN package from logging a fetch error. */
+			async function initWebglLens() {
+				if (!CONFIG.webglLens || calm || !finePointer) return
+				const probe = await fetch(CONFIG.webglSrc, { method: 'HEAD' }).catch(() => null)
+				if (!probe || !probe.ok) return
+
+				try {
+					const module = await import(/* @vite-ignore */ CONFIG.webglSrc)
+					const LiquidGlass = module.LiquidGlass || module.default
+					if (!LiquidGlass || typeof LiquidGlass.init !== 'function' || !root || !hero) return
+
+					hero.dataset.config = JSON.stringify({
+						cornerRadius: 32,
+						zRadius: 28,
+						refraction: 0.69,
+						chromAberration: 0.05,
+						edgeHighlight: 0.1,
+						fresnel: 1,
+						specular: 0.4,
+						blurAmount: 0.1,
+						shadowOpacity: 0.3,
+					})
+
+					await document.fonts.ready
+					await LiquidGlass.init({ root, glassElements: [hero] })
+				} catch {
+					/* keep the CSS glass */
+				}
+			}
+
+			initWebglLens()
+		</script>
 	</body>
 </html>
