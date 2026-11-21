@@ -17,7 +17,7 @@
 			:root {
 				--glass-tint: 0.08; /* white wash sitting on the glass, 0–1 */
 				--glass-rim: 0.6; /* specular edge strength, 0–1 */
-				--glass-blur: 3px; /* blur used on top of real refraction */
+				--glass-blur: 14px; /* blur used on top of real refraction */
 				--glass-blur-fallback: 14px; /* blur used when refraction is unavailable */
 				--glass-refraction: 48; /* px of edge displacement in the SVG lens */
 				--glass-bezel: 22px; /* px band at the rim that bends the backdrop */
@@ -716,7 +716,6 @@
 				refractionStrength: 48, // px of displacement at the rim (--glass-refraction)
 				bezel: 22, // px band at the rim that bends the backdrop (--glass-bezel)
 				chroma: 0.5, // chromatic fringe width, 0–1 (--glass-chroma)
-				blur: 2, // px of blur layered on the refraction (--glass-blur)
 				sheen: true, // pointer-tracked specular highlight
 				webglLens: true, // optional liquidglass lens for the card
 				webglSrc: 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass/dist/index.js',
@@ -916,7 +915,7 @@
 					const id = `glass-lens-${index}`
 					markup += buildFilter(el, id)
 					if (!markup) return
-					el.style.setProperty('--glass-use', `url(#${id}) blur(${CONFIG.blur}px) saturate(1.4)`)
+					el.style.setProperty('--glass-use', `url(#${id}) blur(var(--glass-blur)) saturate(1.4)`)
 					el.dataset.lens = id
 				})
 				svgDefs.innerHTML = markup
