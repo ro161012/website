@@ -690,9 +690,6 @@
 			/* --------------------------------------------------------- config */
 			const CONFIG = {
 				refraction: true, // real edge refraction on Chromium with a fine pointer
-				refractionStrength: 48, // px of displacement at the rim (--glass-refraction)
-				bezel: 22, // px band at the rim that bends the backdrop (--glass-bezel)
-				chroma: 0.5, // chromatic fringe width, 0–1 (--glass-chroma)
 				sheen: true, // pointer-tracked specular highlight
 				webglLens: true, // optional liquidglass lens for the card
 				webglSrc: 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass/dist/index.js',
@@ -805,6 +802,13 @@
 			const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 			const svgDefs = document.getElementById('filter-defs')
 
+			/* the SVG lens reads its optics from the :root tokens, so tuning the
+			   material means editing CSS rather than a second set of numbers */
+			const glassToken = (name, fallback) => {
+				const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))
+				return Number.isFinite(value) ? value : fallback
+			}
+
 			function displacementMap(width, height, radius, bezel) {
 				const scale = Math.min(1, 420 / Math.max(width, height))
 				const w = Math.max(8, Math.round(width * scale))
@@ -849,15 +853,15 @@
 				return canvas.toDataURL('image/png')
 			}
 
-			function buildFilter(el, id) {
+			function buildFilter(el, id, lens) {
 				const rect = el.getBoundingClientRect()
 				if (!rect.width || !rect.height) return ''
 				const width = Math.round(rect.width)
 				const height = Math.round(rect.height)
 				const radius = el.classList.contains('clock') ? height / 2 : 32
-				const map = displacementMap(width, height, radius, CONFIG.bezel)
-				const scale = CONFIG.refractionStrength
-				const fringe = Math.max(0.5, scale * 0.05 * CONFIG.chroma)
+				const map = displacementMap(width, height, radius, lens.bezel)
+				const scale = lens.strength
+				const fringe = Math.max(0.5, scale * 0.05 * lens.chroma)
 
 				return `
 					<filter id="${id}" x="0" y="0" width="${width}" height="${height}"
@@ -886,10 +890,16 @@
 				if (!isChromium || !finePointer) return
 				if (!CSS.supports('backdrop-filter', 'url(#x)') && !CSS.supports('-webkit-backdrop-filter', 'url(#x)')) return
 
+				const lens = {
+					strength: glassToken('--glass-refraction', 48),
+					bezel: glassToken('--glass-bezel', 22),
+					chroma: glassToken('--glass-chroma', 0.5),
+				}
+
 				let markup = ''
 				glassEls.forEach((el, index) => {
 					const id = `glass-lens-${index}`
-					markup += buildFilter(el, id)
+					markup += buildFilter(el, id, lens)
 					if (!markup) return
 					el.style.setProperty('--glass-use', `url(#${id}) blur(var(--glass-blur)) saturate(1.4)`)
 					el.dataset.lens = id
