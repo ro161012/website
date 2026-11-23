@@ -1,0 +1,405 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------- tokens */
+/* Optical values match the portfolio exactly. Tune the material here, not in
+   a component. */
+:root {
+  color-scheme: dark;
+  --glass-tint: 0.08;
+  --glass-rim: 0.6;
+  --glass-blur: 14px;
+  --glass-blur-fallback: 14px;
+  --glass-refraction: 48;
+  --glass-bezel: 22px;
+  --glass-chroma: 0.5;
+  --glass-target: 44px;
+
+  --fg: rgba(255, 255, 255, 0.96);
+  --fg-dim: rgba(255, 255, 255, 0.82);
+  --fg-faint: rgba(255, 255, 255, 0.8);
+  --card-radius: 32px;
+  --pill-radius: 999px;
+  --spring: linear(
+    0,
+    0.014,
+    0.052 2.3%,
+    0.184 4.6%,
+    0.66 10.4%,
+    0.902 14%,
+    1.03 18%,
+    1.09 21.6%,
+    1.114 25.9%,
+    1.111 29.6%,
+    1.081 35.6%,
+    1.005 45.6%,
+    0.971 51.1%,
+    0.961 56.4%,
+    0.973 63.2%,
+    1.001 72.4%,
+    1.012 82.5%,
+    1 100%
+  );
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --accent: #df7257;
+
+  --surface: rgba(12, 14, 18, 0.72);
+  --surface-strong: rgba(12, 14, 18, 0.9);
+  --surface-soft: rgba(255, 255, 255, 0.045);
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --muted: rgba(255, 255, 255, 0.62);
+  --grade-a: #62d6b1;
+  --grade-b: #7cc4e8;
+  --grade-c: #e7c66b;
+  --grade-d: #e49b67;
+  --grade-f: #ef8b7e;
+  --danger: #ffb4a8;
+  --font-sans: "Instrument Sans Variable", "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader Variable", "Newsreader", Georgia, serif;
+
+  /* aliases used by the earlier workspace and login styles */
+  --ink: #12181a;
+  --ink-soft: #334144;
+  --paper: #ffffff;
+  --paper-bright: #ffffff;
+  --teal: #1b2427;
+  --teal-bright: #667376;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --fg: #101719;
+  --fg-dim: #33413f;
+  --fg-faint: #4b5a57;
+  --glass-tint: 0.12;
+  --glass-rim: 0.75;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-strong: rgba(255, 255, 255, 0.9);
+  --surface-soft: rgba(16, 23, 25, 0.045);
+  --line: rgba(16, 23, 25, 0.12);
+  --line-strong: rgba(16, 23, 25, 0.2);
+  --muted: #55635f;
+  --grade-a: #12745f;
+  --grade-b: #216d94;
+  --grade-c: #7d6112;
+  --grade-d: #9b5522;
+  --grade-f: #a63628;
+  --danger: #8d3524;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background: #07080a;
+  scroll-behavior: smooth;
+}
+
+html[data-theme="light"] {
+  background: #e7eaea;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  isolation: isolate;
+  overflow-x: hidden;
+  background: #07080a;
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.4;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="light"] body {
+  background: #e7eaea;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0a0b0d;
+}
+
+html[data-theme="light"] ::selection {
+  background: #12181a;
+  color: #ffffff;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.92);
+  outline-offset: 3px;
+}
+
+html[data-theme="light"] :focus-visible {
+  outline-color: #101719;
+}
+
+/* --------------------------------------------------------------- backdrop */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 95% at 28% 0%, rgba(255, 255, 255, 0.1), transparent 58%),
+    linear-gradient(180deg, rgba(6, 7, 9, 0.78) 0%, rgba(6, 7, 9, 0.84) 100%);
+}
+
+html[data-theme="light"] .app-backdrop {
+  opacity: 0.16;
+}
+
+html[data-theme="light"] .app-scrim {
+  background:
+    radial-gradient(120% 95% at 28% 0%, rgba(255, 255, 255, 0.72), transparent 58%),
+    linear-gradient(180deg, rgba(233, 237, 236, 0.9) 0%, rgba(233, 237, 236, 0.95) 100%);
+}
+
+/* ------------------------------------------------------------------ glass */
+/* The portfolio's base material, verbatim: tint, blur, two inset specular
+   rims, layered shadow. JS swaps the SVG lens into --glass-use. */
+.glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--glass-radius, var(--card-radius));
+  background: rgba(255, 255, 255, var(--glass-tint));
+  --glass-use: blur(var(--glass-blur-fallback)) saturate(1.4);
+  -webkit-backdrop-filter: var(--glass-use);
+  backdrop-filter: var(--glass-use);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.55)),
+    inset -1px -1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.16)),
+    inset 0 0 28px rgba(255, 255, 255, calc(var(--glass-rim) * 0.06)),
+    0 32px 70px rgba(0, 0, 0, 0.42),
+    0 10px 24px rgba(0, 0, 0, 0.26);
+}
+
+html[data-theme="light"] .glass {
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.66)),
+    inset -1px -1px 0 rgba(255, 255, 255, calc(var(--glass-rim) * 0.2)),
+    inset 0 0 28px rgba(255, 255, 255, calc(var(--glass-rim) * 0.1)),
+    0 32px 70px rgba(35, 53, 48, 0.16),
+    0 10px 24px rgba(35, 53, 48, 0.1);
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    180px 130px at var(--mx, 26%) var(--my, 0%),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.03) 40%,
+    transparent 70%
+  );
+  opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, var(--glass-rim)) 0%,
+    rgba(255, 255, 255, calc(var(--glass-rim) * 0.22)) 26%,
+    rgba(255, 255, 255, calc(var(--glass-rim) * 0.08)) 58%,
+    rgba(255, 255, 255, calc(var(--glass-rim) * 0.42)) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.glass-inner {
+  position: relative;
+  z-index: 3;
+  min-height: inherit;
+}
+
+.glass > canvas {
+  z-index: 0 !important;
+  pointer-events: none;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(20, 22, 27, 0.82);
+  }
+
+  html[data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* ---------------------------------------------------------- layout helpers */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  transform: translateY(-180%);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #0a0c0f;
+  color: #ffffff;
+  padding: 0.7rem 1rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.surface {
+  border: 1px solid var(--line);
+  border-radius: 1.35rem;
+  background: var(--surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme="light"] .surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 44px rgba(35, 53, 48, 0.08);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
+}
+
+/* ------------------------------------------------------------- accessibility */
+@media (prefers-contrast: more) {
+  :root {
+    --glass-tint: 0.14;
+    --glass-rim: 1;
+    --fg-dim: rgba(255, 255, 255, 0.86);
+    --fg-faint: rgba(255, 255, 255, 0.78);
+    --line: rgba(255, 255, 255, 0.34);
+    --muted: rgba(255, 255, 255, 0.78);
+  }
+
+  .glass {
+    -webkit-backdrop-filter: blur(10px) saturate(1.2) !important;
+    backdrop-filter: blur(10px) saturate(1.2) !important;
+  }
+
+  .glass::after {
+    background: rgba(255, 255, 255, 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (forced-colors: active) {
+  .app-backdrop,
+  .app-scrim,
+  .glass::before,
+  .glass::after {
+    display: none;
+  }
+
+  body {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .glass,
+  .surface {
+    background: Canvas;
+    border: 1px solid CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  button,
+  a {
+    color: ButtonText;
+  }
+}
