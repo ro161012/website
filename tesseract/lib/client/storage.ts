@@ -41,7 +41,8 @@ export interface LastData {
 }
 
 const SETTINGS_KEY = "tesseract.settings.v1";
-const DISTRICTS_KEY = "tesseract.districts.v1";
+const DISTRICTS_KEY = "tesseract.districts.v2";
+const LEGACY_DISTRICTS_KEY = "tesseract.districts.v1";
 const PREFS_KEY = "tesseract.course-prefs.v1";
 const LAST_DATA_KEY = "tesseract.last-data.v1";
 
@@ -104,23 +105,79 @@ export function saveSettings(settings: AppSettings): void {
   writeJson(SETTINGS_KEY, settings);
 }
 
-export function loadSavedDistricts(): string[] {
-  const stored = readJson<string[]>(DISTRICTS_KEY);
-  return Array.isArray(stored)
-    ? stored.filter((value) => typeof value === "string").slice(0, 12)
-    : [];
+export interface SavedDistrict {
+  url: string;
+  districtId?: string;
+  districtName?: string;
 }
 
-export function rememberDistrict(url: string): string[] {
-  const normalized = url.trim().replace(/\/+$/, "");
+function toSavedDistrict(value: unknown): SavedDistrict | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<SavedDistrict>;
+  if (typeof candidate.url !== "string") return null;
+  const url = candidate.url.trim().replace(/\/+$/, "");
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return {
+    url,
+    ...(typeof candidate.districtId === "string" && candidate.districtId.trim()
+      ? { districtId: candidate.districtId.trim().slice(0, 128) }
+      : {}),
+    ...(typeof candidate.districtName === "string" && candidate.districtName.trim()
+      ? { districtName: candidate.districtName.trim().slice(0, 120) }
+      : {}),
+  };
+}
+
+export function loadSavedDistricts(): SavedDistrict[] {
+  const stored = readJson<unknown>(DISTRICTS_KEY);
+  if (Array.isArray(stored)) {
+    return stored
+      .map(toSavedDistrict)
+      .filter((value): value is SavedDistrict => value !== null)
+      .slice(0, 12);
+  }
+
+  // Preserve districts saved before shared-network support was added.
+  const legacy = readJson<unknown>(LEGACY_DISTRICTS_KEY);
+  if (!Array.isArray(legacy)) return [];
+  return legacy
+    .filter((value): value is string => typeof value === "string")
+    .map((url) => toSavedDistrict({ url }))
+    .filter((value): value is SavedDistrict => value !== null)
+    .slice(0, 12);
+}
+
+export function rememberDistrict(entry: SavedDistrict): SavedDistrict[] {
+  const normalized = toSavedDistrict(entry);
   if (!normalized) return loadSavedDistricts();
-  const next = [normalized, ...loadSavedDistricts().filter((value) => value !== normalized)].slice(0, 12);
+
+  const next = [
+    normalized,
+    ...loadSavedDistricts().filter(
+      (value) =>
+        !(
+          value.url === normalized.url &&
+          value.districtId === normalized.districtId
+        ),
+    ),
+  ].slice(0, 12);
   writeJson(DISTRICTS_KEY, next);
   return next;
 }
 
-export function forgetDistrict(url: string): string[] {
-  const next = loadSavedDistricts().filter((value) => value !== url);
+export function forgetDistrict(url: string, districtId?: string): SavedDistrict[] {
+  const next = loadSavedDistricts().filter(
+    (value) => !(value.url === url && value.districtId === districtId),
+  );
   writeJson(DISTRICTS_KEY, next);
   return next;
 }

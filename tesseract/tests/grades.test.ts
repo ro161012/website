@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Course, CourseSummary } from "@/lib/types";
 import {
   calculateGpa,
+  calculateRrisdGpa,
   gpaForCourse,
   gradeTone,
   neededOnNextTest,
   projectCourse,
+  rrisdUnweightedPoints,
+  rrisdWeightedPoints,
   type Projection,
 } from "@/lib/client/grades";
 
@@ -195,6 +198,45 @@ describe("GPA and grade tone", () => {
   it("keeps a one-credit minimum for GPA weighting", () => {
     const course = { ...summary(95, "ap"), credits: null };
     expect(gpaForCourse(course, settings, true)).toEqual({ points: 4, credits: 1 });
+  });
+
+  it("maps RRISD weighted points to the 6.0 and 5.0 ceilings", () => {
+    expect(rrisdWeightedPoints(100, true)).toBe(6);
+    expect(rrisdWeightedPoints(100, false)).toBe(5);
+    expect(rrisdWeightedPoints(90, true)).toBe(5);
+    expect(rrisdWeightedPoints(90, false)).toBe(4);
+    expect(rrisdWeightedPoints(70, true)).toBe(3);
+    expect(rrisdWeightedPoints(69.9, true)).toBe(0);
+  });
+
+  it("maps RRISD unweighted points by ten-point band", () => {
+    expect(rrisdUnweightedPoints(100)).toBe(4);
+    expect(rrisdUnweightedPoints(90)).toBe(4);
+    expect(rrisdUnweightedPoints(89.9)).toBe(3);
+    expect(rrisdUnweightedPoints(80)).toBe(3);
+    expect(rrisdUnweightedPoints(70)).toBe(2);
+    expect(rrisdUnweightedPoints(69.9)).toBe(0);
+  });
+
+  it("calculates RRISD weighted and unweighted GPAs by attempted credit", () => {
+    const result = calculateRrisdGpa([
+      { average: 100, credits: 1, weighted: false, affectsGpa: true },
+      { average: 80, credits: 1, weighted: true, affectsGpa: true },
+      { average: 85, credits: 1, weighted: false, affectsGpa: false },
+    ]);
+    expect(result.weighted).toBeCloseTo(4.5, 5);
+    expect(result.unweighted).toBeCloseTo(3.333, 3);
+    expect(result.weightedCredits).toBe(2);
+    expect(result.unweightedCredits).toBe(3);
+  });
+
+  it("returns null RRISD totals when no row has an average", () => {
+    expect(calculateRrisdGpa([])).toEqual({
+      weighted: null,
+      unweighted: null,
+      weightedCredits: 0,
+      unweightedCredits: 0,
+    });
   });
 
   it("maps thresholds to tones, including missing grades", () => {

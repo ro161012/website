@@ -110,11 +110,15 @@ GET /api/courses?mp=...
   → providerJson(): envelope + private/no-store headers
 ```
 
-Login is the only route that accepts credentials. It fetches the district login
-page, extracts the anti-forgery and hidden fields, POSTs credentials to the
-same-origin form action, detects failure/MFA/success, selects the student when a
-picker exists, and seals the resulting cookie jar into the session cookie.
-Passwords are never stored, logged or placed in a URL.
+Login is the only route that accepts credentials. It fetches the configured
+district login page, extracts the anti-forgery and hidden fields, POSTs
+credentials to the same-origin form action, detects failure/MFA/success, selects
+the student when a picker exists, and seals the resulting cookie jar into the
+session cookie. The sign-in form uses `HAC_DISTRICT_URL` by default. **Change**
+opens the district autofill: it can fetch the public login page for a shared HAC
+network and list every district that page publishes, then send the selected
+picker value with the login POST. Passwords are never stored, logged or placed
+in a URL.
 
 The demo entry is a top-level `GET /api/auth/demo`. It creates an encrypted demo
 session — no HAC cookies and no credentials — and redirects to `/dashboard`.
@@ -137,6 +141,7 @@ tesseract/
 │  │  │  └─ logout/route.ts
 │  │  ├─ courses/[id]/route.ts
 │  │  ├─ courses/route.ts
+│  │  ├─ hac/districts/route.ts    # shared-network district directory
 │  │  ├─ me/route.ts
 │  │  ├─ reports/route.ts
 │  │  ├─ students/active/route.ts
@@ -150,7 +155,7 @@ tesseract/
 │  │  └─ privacy.module.css
 │  ├─ globals.css                  # glass tokens, base reset, focus and a11y modes
 │  ├─ icon.svg
-│  ├─ layout.tsx                   # fonts, metadata, backdrop, glass provider, PWA
+│  ├─ layout.tsx                   # fonts, metadata, ascii backdrop, glass provider, PWA
 │  ├─ page.tsx                     # sign-in / demo redirect
 │  └─ page.module.css
 ├─ components/
@@ -165,7 +170,8 @@ tesseract/
 │  │  ├─ shell.tsx                 # boot, nav, data loading, toasts, offline banner
 │  │  ├─ tools-screen.tsx
 │  │  └─ what-if.tsx
-│  ├─ auth/login-form.tsx          # district URL, saved districts, vault, demo
+│  ├─ auth/login-form.tsx          # default district, optional switcher, vault, demo
+│  ├─ backdrop/ascii-backdrop.tsx  # animated ascii.rest tesseract behind the glass
 │  ├─ brand/logo-mark.tsx
 │  ├─ glass/glass.tsx              # portfolio SDF displacement lens
 │  ├─ pwa/register-service-worker.tsx
@@ -190,12 +196,14 @@ tesseract/
 │  │  ├─ storage.ts                # settings and last-payload storage
 │  │  └─ vault.ts                  # PBKDF2 + AES-GCM credential vault
 │  ├─ config/
+│  │  ├─ hac-networks.ts           # verified shared HAC networks + types
 │  │  ├─ hac.ts                    # configured district URL
 │  │  └─ site.ts                   # identity and legal copy
 │  ├─ demo/session.ts              # demo session payload
 │  ├─ hac/
 │  │  ├─ auth.ts                   # login form, student picker, session handshake
 │  │  ├─ cookies.ts                # cookie jar
+│  │  ├─ districts.ts              # shared-host district selector parser
 │  │  ├─ html-form.ts              # form extraction and credential scrubbing
 │  │  ├─ http.ts                   # fetch policy, redirects, timeouts
 │  │  ├─ parsers.ts                # grades, assignments, attendance, reports
@@ -224,7 +232,6 @@ tesseract/
 │     ├─ people.ts                 # Student, District, Teacher, Contact
 │     └─ snapshots.ts              # local history snapshots
 ├─ public/
-│  ├─ berserk-panel.webp           # portfolio backdrop
 │  ├─ icon-192.png
 │  ├─ icon-512.png
 │  ├─ manifest.webmanifest
@@ -316,14 +323,16 @@ rest of the page renders.
 
 ## 7. API surface
 
-All routes are Node runtime, `force-dynamic`, private (`no-store`) and require a
-valid session except login, demo and logout.
+All routes are Node runtime, `force-dynamic` and private (`no-store`). Login,
+demo, logout and the district directory are the only public routes.
 
 | Method | Route | Input | Returns |
 | --- | --- | --- | --- |
-| POST | `/api/auth/login` | JSON `{ districtUrl?, username, password, campusId? }` | `LoginResult` + sealed cookie |
+| POST | `/api/auth/login` | JSON `{ districtUrl?, districtId?, username, password, campusId? }` | `LoginResult` + sealed cookie |
+| GET | `/api/hac/districts` | `?url=` | District picker options for a HAC login page |
 | GET | `/api/auth/demo` | — | Demo session cookie, redirect to `/dashboard` |
 | POST | `/api/auth/logout` | — | `{ ok: true }`, cookie cleared |
+| GET | `/api/bootstrap` | `?mp=` | `{ me, courses, upcoming }` in one round trip |
 | GET | `/api/me` | — | `MeData` |
 | GET | `/api/students` | — | `Student[]` |
 | POST | `/api/students/active` | `{ studentId }` | Active `Student` |
@@ -334,9 +343,12 @@ valid session except login, demo and logout.
 | GET | `/api/reports` | — | `ReportCard[]` |
 | GET | `/api/transcript` | — | `Transcript` |
 
-The sign-in form sends `districtUrl`; the server validates it against the same
-HTTPS/SSRF policy used for every HAC request. When omitted, `HAC_DISTRICT_URL`
-selects the district.
+The sign-in form normally omits `districtUrl` and the server uses
+`HAC_DISTRICT_URL`. A district chosen through **Change** is sent explicitly and
+validated against the same HTTPS/SSRF policy used for every HAC request. The
+directory route fetches only the public login page; no credentials are involved.
+The selected `districtId` is the exact option value from that page, and the login
+server uses the option's canonical name in the session.
 
 ---
 
@@ -412,8 +424,11 @@ One adapter; all district variance lives in a validated profile:
 
 ### Material layers
 
-1. **Backdrop** — the portfolio's fixed `berserk-panel.webp` image under an ink
-   scrim; no animation loop, so it is continuous under reduced motion.
+1. **Backdrop** — the animated `starfield` piece from
+   [`ascii.rest`](https://github.com/bas3line/ascii) (MIT), rendered as a fixed
+   64×24 text layer under an ink scrim. The app's stored Reduce motion setting
+   freezes it; otherwise it plays, including under an OS reduced-motion
+   preference.
 2. **Chrome glass** — floating top bar, desktop sidebar, mobile tab bar,
    segmented controls, course sheet, toasts and the overall-average hero card.
 3. **Solid data surfaces** — assignment tables, charts, long lists and reports.
@@ -450,8 +465,9 @@ the course sheet. Screens receive loaded data and callbacks:
   overall strip and course detail dialog.
 - **Insights** — snapshot trend chart, biggest movers, momentum and recent
   changes; charts include hidden data tables.
-- **Tools** — GPA calculator with weighted/unweighted switch, configurable
-  scale/thresholds, and a what-if planner by assignment or category.
+- **Tools** — RRISD weighted 6.0 / unweighted 4.0 GPA calculator with editable
+  rows (average, credits, weighting, affects-GPA) and a what-if planner by
+  assignment or category.
 - **More** — report cards, transcript, attendance calendar, teacher directory
   and the Settings tab.
 - **Settings** — theme, accent, grade thresholds, GPA options, glass intensity,
@@ -504,7 +520,9 @@ explicit unlock.
 | Secrets via env | `SESSION_SECRET`, district/profile settings only |
 | Login rate limit | Per-IP/minute and per-username/hour |
 | Demo rate limit | Per-IP guard before the demo session is created |
-| Cookie flags | HttpOnly, Secure in production, SameSite=Strict, `__Host-` |
+| Directory rate limit | Per-IP guard before fetching a public HAC district list |
+| Cookie flags | HttpOnly, SameSite=Strict, `__Host-` + Secure on HTTPS deployments; a plain `tessera_session` cookie only for a local http preview |
+| Logout race | A short-lived HttpOnly logout marker rejects an in-flight response that tries to re-issue the session cookie |
 | Constant-time compares | Session authentication is delegated to GCM tag verification |
 | Dependency pinning | Exact versions in `package.json`, lockfile committed |
 | CSRF | SameSite plus explicit same-origin/JSON checks on mutations |
@@ -521,16 +539,27 @@ All six phases are implemented in this repository.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | **1 — Foundation** | Identity, architecture, file tree, typed data model, README/setup | **Complete** |
-| **2 — Data** | HAC adapter, district URL login, saved districts, `?demo=1`, API parity, encrypted session | **Complete** |
+| **2 — Data** | HAC adapter, configured-district login, shared-network district autofill, saved districts, `?demo=1`, API parity, encrypted session | **Complete** |
 | **3 — Material** | Glass tokens, backdrop, SDF refraction, chrome components, a11y modes | **Complete** |
 | **4 — Core screens** | Login, Home, Grades, course detail, Insights, Tools | **Complete** |
 | **5 — Rest** | Reports, transcript, attendance, teachers, settings, PWA/offline, privacy | **Complete** |
 | **6 — Proof** | Tests, accessibility record, build verification | **Complete** |
 
-Test coverage at delivery: 110 tests across 16 files, including grade math,
+Test coverage at delivery: 118 tests across 17 files, including grade math,
 insight diffs, local snapshots, contracts, session crypto, SSRF policy, rate
-limits, parsers and district profiles. `docs/accessibility.md` separates
-implemented behavior from audit steps that remain manual.
+limits, HAC district-picker parsing, parsers and district profiles. `docs/accessibility.md` records the
+actual audits: Lighthouse 12.8.2 scored 100 on sign-in and dashboard, axe-core
+4.10.3 found 0 violations on six views, and the course dialog's focus trap and
+restoration were exercised in Chromium. Screen-reader, zoom and offline checks
+remain manual.
+
+A real-account smoke test on 23 November 2026 signed in through the configured
+HAC and loaded 8 current courses, a course detail, 3 upcoming assignments, 63
+attendance days, one report, the transcript, teachers and settings with no UI
+alerts. Switching to a non-current marking period returned no course card
+markup; the app surfaced `courses_missing` and restored the current period. The
+live session stayed encrypted; as designed, the dashboard also wrote compact
+local snapshots and a last-data cache, which were removed after the smoke test.
 
 ### Known limitations
 
@@ -539,4 +568,5 @@ implemented behavior from audit steps that remain manual.
 - CAPTCHA, hardware MFA and SSO are surfaced as typed failures, not bypassed.
 - Vercel's in-memory rate limiter and cache are best-effort across instances.
 - Glass refraction is Chromium-only; other browsers get the baseline material.
-- Lighthouse, axe and screen-reader audits have not been run.
+- Screen-reader, zoom/reflow, touch-target and PWA offline checks remain
+  manual; see `docs/accessibility.md`.

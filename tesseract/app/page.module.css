@@ -118,7 +118,8 @@
   gap: 0.8rem;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   min-height: var(--glass-target);
   border: 1px solid var(--line);
@@ -135,12 +136,14 @@
     box-shadow 160ms ease;
 }
 
-.field input:hover:not(:disabled) {
+.field input:hover:not(:disabled),
+.field select:hover:not(:disabled) {
   border-color: var(--line-strong);
   background: rgba(255, 255, 255, 0.09);
 }
 
-.field input:focus-visible {
+.field input:focus-visible,
+.field select:focus-visible {
   border-color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.11);
   box-shadow:
@@ -148,7 +151,8 @@
     0 0 0 3px rgba(255, 255, 255, 0.12);
 }
 
-.field input:disabled {
+.field input:disabled,
+.field select:disabled {
   opacity: 0.62;
 }
 
@@ -161,6 +165,55 @@
   font-size: 0.62rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.districtRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.65rem 0.8rem;
+}
+
+.districtCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.districtLabel {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.districtName {
+  font-size: 0.82rem;
+  font-weight: 620;
+  line-height: 1.3;
+}
+
+.districtHost {
+  color: var(--muted);
+  font-size: 0.62rem;
+  overflow-wrap: anywhere;
+}
+
+.districtPanel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.districtActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
 }
 
 .textButton {
@@ -177,8 +230,13 @@
   text-underline-offset: 0.22em;
 }
 
-.textButton:hover {
+.textButton:hover:not(:disabled) {
   color: var(--fg);
+}
+
+.textButton:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .savedSelect {
@@ -389,7 +447,9 @@
 }
 
 html[data-theme="light"] .field input,
+html[data-theme="light"] .field select,
 html[data-theme="light"] .savedSelect,
+html[data-theme="light"] .districtRow,
 html[data-theme="light"] .demoButton,
 html[data-theme="light"] .vaultForm,
 html[data-theme="light"] .vaultBanner {

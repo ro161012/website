@@ -17,6 +17,12 @@ export const LoginRequestSchema = z.strictObject({
   campusId: z.string().trim().min(1).max(128).optional(),
   /** Optional per-sign-in district; the deployment's HAC_DISTRICT_URL is the fallback. */
   districtUrl: HttpsUrlSchema.optional(),
+  /** Selected option on a shared HAC host's district picker. */
+  districtId: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_-]{1,128}$/)
+    .optional(),
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 

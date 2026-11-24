@@ -4,6 +4,7 @@ import { RateLimitedProblem } from "@/lib/security/errors";
 import {
   dataLimiter,
   demoLimiter,
+  directoryLimiter,
   loginHourLimiter,
   loginMinuteLimiter,
 } from "@/lib/security/rate-limit";
@@ -29,6 +30,17 @@ export function guardDemo(request: NextRequest): void {
   const now = Date.now();
   const ip = getClientIp(request);
   const result = demoLimiter.consume(`demo:${ip}`, 10, 60_000, now);
+  if (!result.allowed) throw new RateLimitedProblem(retrySeconds(result.resetAt, now));
+}
+
+export function guardDirectory(request: NextRequest): void {
+  const now = Date.now();
+  const result = directoryLimiter.consume(
+    `directory:${getClientIp(request)}`,
+    30,
+    60_000,
+    now,
+  );
   if (!result.allowed) throw new RateLimitedProblem(retrySeconds(result.resetAt, now));
 }
 

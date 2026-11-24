@@ -4,8 +4,12 @@ import { LoginForm } from "@/components/auth/login-form";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { Glass } from "@/components/glass/glass";
 import { SITE } from "@/lib/config/site";
-import { getHacDistrictUrl } from "@/lib/config/hac";
-import { openSession, sessionCookieName } from "@/lib/session/crypto";
+import { getHacDistrictName, getHacDistrictUrl } from "@/lib/config/hac";
+import {
+  logoutCookieName,
+  openSession,
+  sessionCookieName,
+} from "@/lib/session/crypto";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +19,12 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const token = (await cookies()).get(sessionCookieName())?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(sessionCookieName())?.value;
+  const loggedOut = cookieStore.get(logoutCookieName())?.value === "1";
   let signedIn = false;
 
-  if (token) {
+  if (token && !loggedOut) {
     try {
       openSession(token);
       signedIn = true;
@@ -65,7 +71,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           ) : null}
 
-          <LoginForm defaultDistrictUrl={getHacDistrictUrl()} />
+          <LoginForm
+            defaultDistrictName={getHacDistrictName()}
+            defaultDistrictUrl={getHacDistrictUrl()}
+          />
         </Glass>
 
         <footer className={styles.legal}>

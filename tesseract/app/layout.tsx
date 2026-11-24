@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/instrument-sans";
 import "@fontsource-variable/newsreader";
+import { AsciiBackdrop } from "@/components/backdrop/ascii-backdrop";
 import { GlassProvider } from "@/components/glass/glass";
 import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
 import "./globals.css";
@@ -47,15 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="dark">
       <body>
-        <img
-          alt=""
-          className="app-backdrop"
-          decoding="async"
-          fetchPriority="high"
-          height={1080}
-          src="/berserk-panel.webp"
-          width={1920}
-        />
+        <AsciiBackdrop />
         <div aria-hidden="true" className="app-scrim" />
         <GlassProvider>
           {children}

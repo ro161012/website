@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { NextRequest, NextResponse } from "next/server";
 import {
   createSession,
+  logoutCookieName,
   openSession,
   sealSession,
   sessionCookieName,
   sessionCookieOptions,
 } from "@/lib/session/crypto";
+import {
+  clearLogoutCookie,
+  clearSessionCookie,
+  readSession,
+} from "@/lib/session/current";
 import { SessionSchema, SESSION_MAX_JSON_BYTES } from "@/lib/session/schema";
 import {
   SessionExpiredProblem,
@@ -96,7 +103,7 @@ describe("encrypted session", () => {
     const session = createSession(TEST_SESSION_INPUT);
     const options = sessionCookieOptions(session, true);
 
-    expect(sessionCookieName(true)).toBe("__Host-tessera_session");
+    expect(sessionCookieName(true, true)).toBe("__Host-tessera_session");
     expect(sessionCookieName(false)).toBe("tessera_session");
     expect(options.httpOnly).toBe(true);
     expect(options.secure).toBe(true);
@@ -105,6 +112,45 @@ describe("encrypted session", () => {
     expect(options.expires.getTime()).toBe(session.expiresAt);
     expect(options.maxAge).toBeLessThanOrEqual(12 * 60 * 60);
     expect(options.maxAge).toBeGreaterThan(12 * 60 * 60 - 10);
+  });
+
+  it("sets a short logout marker that blocks a resurrected session", () => {
+    const session = createSession(TEST_SESSION_INPUT);
+    const token = sealSession(session);
+    const cleared = NextResponse.json({ ok: true });
+    clearSessionCookie(cleared);
+
+    expect(
+      cleared.cookies.get(logoutCookieName())?.value,
+    ).toBe("1");
+    expect(cleared.cookies.get(sessionCookieName())?.value).toBe("");
+
+    const request = new NextRequest("http://localhost/", {
+      headers: {
+        cookie: `${sessionCookieName()}=${token}; ${logoutCookieName()}=1`,
+      },
+    });
+    expect(() => readSession(request)).toThrow();
+  });
+
+  it("clears the logout marker when a new session is established", () => {
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(logoutCookieName(), "1");
+    clearLogoutCookie(response);
+    expect(response.cookies.get(logoutCookieName())?.value).toBe("");
+  });
+
+  it("uses a plain cookie for a local http production preview", () => {
+    const previous = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3010";
+    try {
+      const session = createSession(TEST_SESSION_INPUT);
+      expect(sessionCookieName(true)).toBe("tessera_session");
+      expect(sessionCookieOptions(session, true).secure).toBe(false);
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+      else process.env.NEXT_PUBLIC_APP_URL = previous;
+    }
   });
 });
 

@@ -1,48 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Course, CourseSummary } from "@/lib/types";
-import type { AppSettings } from "@/lib/client/storage";
 import { apiGet, errorMessage, SessionLostError } from "@/components/workspace/api";
-import {
-  calculateGpa,
-  gpaForCourse,
-  levelLabel,
-} from "@/lib/client/grades";
-import { formatPercent, formatPoints } from "@/components/workspace/format";
-import { EmptyState, Segmented, Skeleton } from "@/components/ui/ui";
+import { EmptyState, Skeleton } from "@/components/ui/ui";
+import { GpaCalculator } from "./gpa-calculator";
 import { WhatIf } from "./what-if";
 import styles from "./app.module.css";
 
 export function ToolsScreen({
   courses,
+  details,
   markingPeriod,
-  settings,
   notify,
-  onOpenCourse,
   onSessionLost,
 }: {
   courses: CourseSummary[];
+  details: Record<string, Course>;
   markingPeriod: string | null;
-  settings: AppSettings;
   notify: (message: string) => void;
-  onOpenCourse: (courseId: string) => void;
   onSessionLost: () => void;
 }) {
-  const [weighted, setWeighted] = useState(settings.weightedGpa);
   const [courseId, setCourseId] = useState("");
   const [detail, setDetail] = useState<Course | null>(null);
   const [error, setError] = useState<string | null>(null);
   const activeCourseId = courseId || courses[0]?.id || "";
-  const loading = !error && detail?.id !== activeCourseId;
-
-  const gpa = useMemo(
-    () => calculateGpa(courses, settings, weighted),
-    [courses, settings, weighted],
-  );
+  const cachedDetail = details[activeCourseId] ?? null;
+  const activeDetail = detail?.id === activeCourseId ? detail : cachedDetail;
+  const loading = !error && activeDetail === null;
 
   useEffect(() => {
     if (!activeCourseId) return;
+    // The shell may already have this detail from its idle prefetch.
+    if (details[activeCourseId]) return;
     let cancelled = false;
     const query = markingPeriod ? `?mp=${encodeURIComponent(markingPeriod)}` : "";
     apiGet<Course>(`/api/courses/${encodeURIComponent(activeCourseId)}${query}`)
@@ -62,19 +52,7 @@ export function ToolsScreen({
     return () => {
       cancelled = true;
     };
-  }, [activeCourseId, markingPeriod, onSessionLost]);
-
-  async function copyGpa() {
-    const summary = `${gpa.gpa ?? "—"} ${
-      weighted ? "weighted" : "unweighted"
-    } GPA · ${gpa.credits} credits · Tesseract`;
-    try {
-      await navigator.clipboard.writeText(summary);
-      notify("GPA summary copied");
-    } catch {
-      notify("Clipboard is unavailable");
-    }
-  }
+  }, [activeCourseId, details, markingPeriod, onSessionLost]);
 
   return (
     <div className={styles.page}>
@@ -94,91 +72,26 @@ export function ToolsScreen({
       <section className={`${styles.panel} surface`} aria-labelledby="gpa-title">
         <div className={styles.panelHead}>
           <div>
-            <span className={styles.panelKicker}>{settings.gpaScale.toFixed(1)} scale</span>
+            <span className={styles.panelKicker}>RRISD · weighted 6.0</span>
             <h2 className={styles.panelTitle} id="gpa-title">
               GPA calculator
             </h2>
           </div>
-          <Segmented
-            compact
-            label="GPA weighting"
-            onChange={(value) => setWeighted(value === "weighted")}
-            options={[
-              { id: "weighted", label: "Weighted" },
-              { id: "unweighted", label: "Unweighted" },
-            ]}
-            value={weighted ? "weighted" : "unweighted"}
-          />
-        </div>
-
-        <div className={styles.gpaHeader}>
-          <div>
-            <span className={styles.metricLabel}>{weighted ? "Weighted" : "Unweighted"} GPA</span>
-            <span className={styles.gpaValue}>{gpa.gpa ?? "—"}</span>
-          </div>
-          <div className={styles.gpaMeta}>
-            <span>
-              <strong>{gpa.counted}</strong> courses counted
-            </span>
-            <span>
-              <strong>{formatPoints(gpa.credits)}</strong> credits
-            </span>
-            <button className={styles.textButton} onClick={() => void copyGpa()} type="button">
-              Copy summary
-            </button>
-          </div>
+          <span className={styles.stamp}>Weighted & unweighted</span>
         </div>
 
         {courses.length === 0 ? (
-          <EmptyState body="No courses are loaded for this marking period." title="Nothing to weight" />
+          <EmptyState
+            body="No courses are loaded for this marking period."
+            title="Nothing to weight"
+          />
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <caption className="sr-only">GPA by course</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Course</th>
-                  <th scope="col">Level</th>
-                  <th className={styles.num} scope="col">
-                    Percent
-                  </th>
-                  <th className={styles.num} scope="col">
-                    Credits
-                  </th>
-                  <th className={styles.num} scope="col">
-                    Points
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {courses.map((course) => {
-                  const value = gpaForCourse(course, settings, weighted);
-                  return (
-                    <tr key={course.id}>
-                      <td>
-                        <button
-                          className={styles.tableLink}
-                          onClick={() => onOpenCourse(course.id)}
-                          type="button"
-                        >
-                          {course.name}
-                        </button>
-                      </td>
-                      <td>{levelLabel(course.level)}</td>
-                      <td className={styles.num}>{formatPercent(course.grade.percent)}</td>
-                      <td className={styles.num}>{formatPoints(value.credits)}</td>
-                      <td className={styles.num}>{value.points ?? "—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <GpaCalculator
+            courses={courses}
+            key={markingPeriod ?? "current"}
+            notify={notify}
+          />
         )}
-        <p className={styles.panelNote}>
-          Honors/AP/IB bonuses and the 4.0/5.0 scale are editable in More →
-          Settings → GPA.
-        </p>
       </section>
 
       <section className={`${styles.panel} surface`} aria-labelledby="whatif-tool-title">
@@ -213,10 +126,10 @@ export function ToolsScreen({
           <EmptyState body="Load a marking period first." title="No course selected" />
         ) : loading ? (
           <Skeleton rows={4} />
+        ) : activeDetail ? (
+          <WhatIf course={activeDetail} />
         ) : error ? (
           <EmptyState body={error ?? "That course could not be loaded."} title="Course unavailable" />
-        ) : detail ? (
-          <WhatIf course={detail} />
         ) : null}
       </section>
     </div>

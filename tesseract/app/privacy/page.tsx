@@ -39,6 +39,11 @@ export default function PrivacyPage() {
             written to a file, database, log or URL.
           </p>
           <p>
+            When you use district autofill, only the public HAC address is sent to
+            our server. It fetches that sign-in page to read the district names;
+            no username, password or student data is involved.
+          </p>
+          <p>
             The encrypted session cookie contains the HAC cookie jar, the district,
             the student list and an expiry — not grades and not your password. It
             is HttpOnly, SameSite=Strict, Secure in production, and lasts at most

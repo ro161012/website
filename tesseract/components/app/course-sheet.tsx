@@ -23,6 +23,9 @@ type DetailState =
   | { status: "ready"; data: Course }
   | { status: "error"; message: string };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function CourseSheet({
   course,
   cached,
@@ -47,6 +50,7 @@ export function CourseSheet({
   );
   const [reload, setReload] = useState(0);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (cached && reload === 0) return;
@@ -73,16 +77,60 @@ export function CourseSheet({
   }, [cached, course.id, markingPeriod, reload, onLoaded, onSessionLost]);
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusable = (): HTMLElement[] => {
+      const panel = sheetRef.current;
+      if (!panel) return [];
+      return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
+        (element) => element.getClientRects().length > 0,
+      );
     };
-    const previous = document.body.style.overflow;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const panel = sheetRef.current;
+      if (!panel) return;
+      const items = focusable();
+      if (items.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = active instanceof Node && panel.contains(active);
+
+      if (event.shiftKey) {
+        if (!inside || active === first) {
+          event.preventDefault();
+          last?.focus();
+        }
+      } else if (!inside || active === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
     closeRef.current?.focus();
+
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
+      if (previousFocus && previousFocus !== document.body && previousFocus.isConnected) {
+        previousFocus.focus();
+      }
     };
   }, [onClose]);
 
@@ -100,59 +148,65 @@ export function CourseSheet({
         innerClassName={styles.sheetInner}
         role="dialog"
       >
-        <header className={styles.sheetHead}>
-          <div>
-            <p className={styles.panelKicker}>
-              {levelLabel(course.level)}
-              {course.period ? ` · Period ${course.period}` : ""}
-            </p>
-            <h2 className={styles.sheetTitle} id="course-sheet-title">
-              {course.name}
-            </h2>
-            <p className={styles.sheetMeta}>
-              {[course.teacher?.name, course.room, course.credits ? `${course.credits} credit` : null]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
+        <div className={styles.sheetFocus} ref={sheetRef}>
+          <div className={styles.sheetHead}>
+            <div>
+              <p className={styles.panelKicker}>
+                {levelLabel(course.level)}
+                {course.period ? ` · Period ${course.period}` : ""}
+              </p>
+              <h2 className={styles.sheetTitle} id="course-sheet-title">
+                {course.name}
+              </h2>
+              <p className={styles.sheetMeta}>
+                {[
+                  course.teacher?.name,
+                  course.room,
+                  course.credits ? `${course.credits} credit` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+            <button
+              aria-label="Close course details"
+              className={styles.iconButton}
+              onClick={onClose}
+              ref={closeRef}
+              type="button"
+            >
+              ×
+            </button>
           </div>
-          <button
-            aria-label="Close course details"
-            className={styles.iconButton}
-            onClick={onClose}
-            ref={closeRef}
-            type="button"
-          >
-            ×
-          </button>
-        </header>
 
-        <div className={styles.sheetBody}>
-          {state.status === "loading" ? (
-            <Skeleton rows={5} />
-          ) : state.status === "error" ? (
-            <EmptyState
-              action={
-                <button
-                  className={styles.secondaryButton}
-                  onClick={() => {
-                    setState({ status: "loading" });
-                    setReload((value) => value + 1);
-                  }}
-                  type="button"
-                >
-                  Try again
-                </button>
-              }
-              body={state.message}
-              title="Course unavailable"
-            />
-          ) : (
-            <CourseDetail
-              course={state.data}
-              settings={settings}
-              snapshots={snapshots}
-            />
-          )}
+          <div className={styles.sheetBody}>
+            {state.status === "loading" ? (
+              <Skeleton rows={5} />
+            ) : state.status === "error" ? (
+              <EmptyState
+                action={
+                  <button
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setState({ status: "loading" });
+                      setReload((value) => value + 1);
+                    }}
+                    type="button"
+                  >
+                    Try again
+                  </button>
+                }
+                body={state.message}
+                title="Course unavailable"
+              />
+            ) : (
+              <CourseDetail
+                course={state.data}
+                settings={settings}
+                snapshots={snapshots}
+              />
+            )}
+          </div>
         </div>
       </Glass>
     </div>

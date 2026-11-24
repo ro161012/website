@@ -47,7 +47,17 @@ function token(name: string, fallback: number): number {
  * displacement is strongest inside the bezel. This is the portfolio's map,
  * unchanged, so the app's glass optics match it exactly.
  */
-function displacementMap(width: number, height: number, radius: number, bezel: number): string {
+function displacementMap(
+  width: number,
+  height: number,
+  radius: number,
+  bezel: number,
+  cache: Map<string, string>,
+): string {
+  const cacheKey = `${width}x${height}:${radius.toFixed(2)}:${bezel}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
   const scale = Math.min(1, 420 / Math.max(width, height));
   const w = Math.max(8, Math.round(width * scale));
   const h = Math.max(8, Math.round(height * scale));
@@ -93,13 +103,17 @@ function displacementMap(width: number, height: number, radius: number, bezel: n
   }
 
   ctx.putImageData(image, 0, 0);
-  return canvas.toDataURL("image/png");
+  const url = canvas.toDataURL("image/png");
+  if (cache.size > 64) cache.clear();
+  cache.set(cacheKey, url);
+  return url;
 }
 
 function buildFilter(
   element: HTMLElement,
   id: string,
   lens: { strength: number; bezel: number; chroma: number },
+  cache: Map<string, string>,
 ): string {
   const rect = element.getBoundingClientRect();
   if (!rect.width || !rect.height) return "";
@@ -115,7 +129,7 @@ function buildFilter(
       height / 2,
     ),
   );
-  const map = displacementMap(width, height, radius, lens.bezel);
+  const map = displacementMap(width, height, radius, lens.bezel, cache);
   if (!map) return "";
   const scale = lens.strength;
   const fringe = Math.max(0.5, scale * 0.05 * lens.chroma);
@@ -149,6 +163,7 @@ export function GlassProvider({ children }: { children: ReactNode }) {
   const timer = useRef<number | null>(null);
   const counter = useRef(0);
   const observers = useRef(new Map<HTMLElement, ResizeObserver>());
+  const mapCache = useRef(new Map<string, string>());
 
   const rebuild = useCallback(() => {
     const svg = svgRef.current;
@@ -179,7 +194,7 @@ export function GlassProvider({ children }: { children: ReactNode }) {
     for (const element of elements.current) {
       if (!element.isConnected) continue;
       const id = `glass-lens-${counter.current++}`;
-      const filter = buildFilter(element, id, lens);
+      const filter = buildFilter(element, id, lens, mapCache.current);
       if (!filter) continue;
       markup += filter;
       applied.push({ element, id });
@@ -235,6 +250,16 @@ export function GlassProvider({ children }: { children: ReactNode }) {
       for (const element of elements.current) {
         const rect = element.getBoundingClientRect();
         if (!rect.width || !rect.height) continue;
+        // Only the panel under the pointer needs a new sheen. Writing the two
+        // custom properties on every glass element repaints all of them.
+        if (
+          pointer.x < rect.left ||
+          pointer.x > rect.right ||
+          pointer.y < rect.top ||
+          pointer.y > rect.bottom
+        ) {
+          continue;
+        }
         const x = ((pointer.x - rect.left) / rect.width) * 100;
         const y = ((pointer.y - rect.top) / rect.height) * 100;
         element.style.setProperty("--mx", `${x.toFixed(2)}%`);

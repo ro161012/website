@@ -252,6 +252,92 @@ export function calculateGpa(
   };
 }
 
+export interface RrisdGpaRow {
+  average: number;
+  credits: number;
+  /** Advanced rows use the 6.0 ceiling; regular and dual-credit rows use 5.0. */
+  weighted: boolean;
+  /** Weighted GPA only counts rows with this flag. Unweighted counts every row. */
+  affectsGpa: boolean;
+}
+
+export interface RrisdGpaResult {
+  weighted: number | null;
+  unweighted: number | null;
+  weightedCredits: number;
+  unweightedCredits: number;
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
+
+function usableCredits(value: number): number {
+  return Number.isFinite(value) && value > 0 ? value : 0.5;
+}
+
+/**
+ * RRISD weighted honor points, matching gpa.ruhangupta.com: the ceiling is
+ * 6.0 for advanced courses and 5.0 for everything else, minus one point for
+ * every ten points below 100. Grades below 70 earn no points.
+ */
+export function rrisdWeightedPoints(
+  average: number,
+  weighted: boolean,
+): number {
+  const value = clampPercent(average);
+  if (value < 70) return 0;
+  return Math.round(((weighted ? 6 : 5) - (100 - value) / 10) * 1000) / 1000;
+}
+
+/** Standard unweighted honor points: 4 / 3 / 2 / 0 by ten-point band. */
+export function rrisdUnweightedPoints(average: number): number {
+  const value = clampPercent(average);
+  if (value >= 90) return 4;
+  if (value >= 80) return 3;
+  if (value >= 70) return 2;
+  return 0;
+}
+
+/**
+ * Calculate the weighted and unweighted GPA the way the RRISD calculator
+ * does. Weighted credit is only earned by rows marked `affectsGpa`, while
+ * the unweighted total averages every row that has an average.
+ */
+export function calculateRrisdGpa(rows: RrisdGpaRow[]): RrisdGpaResult {
+  let weightedQuality = 0;
+  let weightedCredits = 0;
+  let unweightedQuality = 0;
+  let unweightedCredits = 0;
+
+  for (const row of rows) {
+    if (!Number.isFinite(row.average)) continue;
+    const credits = usableCredits(row.credits);
+
+    unweightedQuality += rrisdUnweightedPoints(row.average) * credits;
+    unweightedCredits += credits;
+
+    if (row.affectsGpa) {
+      weightedQuality += rrisdWeightedPoints(row.average, row.weighted) * credits;
+      weightedCredits += credits;
+    }
+  }
+
+  return {
+    weighted:
+      weightedCredits > 0
+        ? Math.round((weightedQuality / weightedCredits) * 1000) / 1000
+        : null,
+    unweighted:
+      unweightedCredits > 0
+        ? Math.round((unweightedQuality / unweightedCredits) * 1000) / 1000
+        : null,
+    weightedCredits: Math.round(weightedCredits * 100) / 100,
+    unweightedCredits: Math.round(unweightedCredits * 100) / 100,
+  };
+}
+
 export function averagePercent(courses: CourseSummary[]): number | null {
   const values = courses
     .map((course) => course.grade.percent)

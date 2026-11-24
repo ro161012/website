@@ -133,8 +133,40 @@ export function openSession(
   return session;
 }
 
-export function sessionCookieName(production = process.env.NODE_ENV === "production"): string {
-  return production ? "__Host-tessera_session" : "tessera_session";
+/**
+ * `__Host-` and `Secure` require an HTTPS deployment. A local production
+ * build (`next start` on http://localhost) is still a secure context for the
+ * browser, but Chromium rejects Secure cookies set over an http scheme. Use
+ * the deployment origin when it is declared; otherwise fall back to the
+ * production default, which is HTTPS on Vercel.
+ */
+export function sessionCookieSecure(
+  production = process.env.NODE_ENV === "production",
+): boolean {
+  if (!production) return false;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!appUrl) return true;
+  try {
+    return new URL(appUrl).protocol === "https:";
+  } catch {
+    return true;
+  }
+}
+
+export function sessionCookieName(
+  production = process.env.NODE_ENV === "production",
+  secure = sessionCookieSecure(production),
+): string {
+  return secure ? "__Host-tessera_session" : "tessera_session";
+}
+
+/** Short-lived marker that prevents an in-flight response from resurrecting a
+ * session after sign-out. */
+export function logoutCookieName(
+  production = process.env.NODE_ENV === "production",
+  secure = sessionCookieSecure(production),
+): string {
+  return secure ? "__Host-tessera_logged_out" : "tessera_logged_out";
 }
 
 export interface SessionCookieOptions {
@@ -153,7 +185,7 @@ export function sessionCookieOptions(
 ): SessionCookieOptions {
   return {
     httpOnly: true,
-    secure: production,
+    secure: sessionCookieSecure(production),
     sameSite: "strict",
     path: "/",
     expires: new Date(session.expiresAt),

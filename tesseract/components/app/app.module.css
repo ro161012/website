@@ -1344,6 +1344,112 @@ button.rowMain:hover .rowTitle {
   font-weight: 450;
 }
 
+.gpaCalculator {
+  min-width: 0;
+}
+
+.gpaTotals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.gpaTotalCard {
+  display: grid;
+  gap: 0.15rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.8rem 0.9rem;
+}
+
+.gpaScale {
+  color: var(--muted);
+  font-size: 0.48rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+}
+
+.gpaTotalValue {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.gpaTotalMeta {
+  color: var(--muted);
+  font-size: 0.54rem;
+}
+
+.gpaToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.gpaTable {
+  min-width: 44rem;
+}
+
+.gpaCourseInput {
+  min-width: 13rem;
+}
+
+.gpaCellInput {
+  width: 5rem;
+  text-align: right;
+}
+
+.gpaCreditsInput {
+  width: 4.4rem;
+  text-align: right;
+}
+
+.gpaSelect {
+  min-width: 8.5rem;
+}
+
+.gpaCheck {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+
+.gpaRemove {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.gpaRemove:hover {
+  border-color: var(--line-strong);
+  color: var(--danger);
+}
+
+.gpaEmpty {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .gpaTotals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .tableWrap {
   width: 100%;
   overflow-x: auto;
@@ -1682,6 +1788,10 @@ button.rowMain:hover .rowTitle {
   display: flex;
   height: 100%;
   flex-direction: column;
+}
+
+.sheetFocus {
+  display: contents;
 }
 
 .sheetHead {
@@ -2720,6 +2830,7 @@ html[data-theme="light"] .primarySmall {
 html[data-theme="light"] .courseCard,
 html[data-theme="light"] .metric,
 html[data-theme="light"] .overallStrip,
+html[data-theme="light"] .gpaTotalCard,
 html[data-theme="light"] .chartArea {
   background: var(--surface);
 }

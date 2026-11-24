@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { guardDemo } from "@/lib/api/guards";
 import { demoSessionInput } from "@/lib/demo/session";
-import { applySessionCookie } from "@/lib/session/current";
+import { applySessionCookie, clearLogoutCookie } from "@/lib/session/current";
 import { createSession } from "@/lib/session/crypto";
 
 export const runtime = "nodejs";
@@ -20,5 +20,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const response = NextResponse.redirect(new URL("/dashboard", request.url), 303);
   applySessionCookie(response, createSession(demoSessionInput()));
+  clearLogoutCookie(response);
   return response;
 }

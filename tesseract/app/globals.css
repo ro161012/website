@@ -144,6 +144,21 @@ textarea {
   font: inherit;
 }
 
+/* Native select popups do not inherit the translucent field background. On
+   Windows the option list falls back to a light popup, so near-white option
+   text becomes invisible without an explicit opaque palette. */
+select option,
+select optgroup {
+  background-color: #14181c;
+  color: #f4f6f7;
+}
+
+html[data-theme="light"] select option,
+html[data-theme="light"] select optgroup {
+  background-color: #ffffff;
+  color: #101719;
+}
+
 button {
   cursor: pointer;
 }
@@ -162,36 +177,60 @@ html[data-theme="light"] :focus-visible {
 }
 
 /* --------------------------------------------------------------- backdrop */
+/* The ascii.rest starfield, a 64x24 text piece filling the viewport. */
 .app-backdrop {
   position: fixed;
   inset: 0;
   z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 50%;
+  overflow: hidden;
   pointer-events: none;
   user-select: none;
+  background: #07080a;
 }
 
+.app-ascii {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  margin: 0;
+  transform: translate(-50%, -50%) scale(1.02);
+  color: rgba(198, 222, 245, 0.5);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: max(10px, 2.75vw);
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre;
+}
+
+/* A phone shows only a narrow slice of the 64-column grid, so keep the glyphs
+   small enough to read as stars rather than blocking the form. */
+@media (max-width: 640px) {
+  .app-ascii {
+    font-size: 14px;
+  }
+}
+
+/* The artwork is dark, so the scrim only anchors the glass panels and the fine
+   print instead of hiding the image. */
 .app-scrim {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background:
-    radial-gradient(120% 95% at 28% 0%, rgba(255, 255, 255, 0.1), transparent 58%),
-    linear-gradient(180deg, rgba(6, 7, 9, 0.78) 0%, rgba(6, 7, 9, 0.84) 100%);
+  background: linear-gradient(180deg, rgba(6, 7, 9, 0.5) 0%, rgba(6, 7, 9, 0.64) 100%);
 }
 
 html[data-theme="light"] .app-backdrop {
-  opacity: 0.16;
+  background: #e7eaea;
+}
+
+html[data-theme="light"] .app-ascii {
+  color: rgba(34, 64, 82, 0.8);
 }
 
 html[data-theme="light"] .app-scrim {
-  background:
-    radial-gradient(120% 95% at 28% 0%, rgba(255, 255, 255, 0.72), transparent 58%),
-    linear-gradient(180deg, rgba(233, 237, 236, 0.9) 0%, rgba(233, 237, 236, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(233, 237, 236, 0.82) 0%, rgba(233, 237, 236, 0.9) 100%);
 }
 
 /* ------------------------------------------------------------------ glass */
@@ -351,6 +390,16 @@ html[data-theme="light"] .surface {
 
   .glass::after {
     background: rgba(255, 255, 255, 0.9);
+  }
+
+  /* The lighter scrim is only tuned for the default look; dim the artwork
+     further when the reader asks for more contrast. */
+  .app-scrim {
+    background: linear-gradient(180deg, rgba(6, 7, 9, 0.7) 0%, rgba(6, 7, 9, 0.8) 100%);
+  }
+
+  .app-ascii {
+    opacity: 0.55;
   }
 }
 

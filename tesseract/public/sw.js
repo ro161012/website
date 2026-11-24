@@ -1,6 +1,7 @@
-/* Tesseract app-shell service worker. Grade API responses are never cached. */
-const CACHE = "tesseract-shell-v1";
-const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/berserk-panel.webp"];
+/* Tesseract app-shell service worker. Grade API responses are never cached.
+   Bump CACHE whenever a SHELL entry changes: those files are cache-first. */
+const CACHE = "tesseract-shell-v3";
+const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

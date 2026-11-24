@@ -3,6 +3,7 @@ import { apiFailure, apiSuccess, httpStatusForError } from "@/lib/api/envelope";
 import { SITE } from "@/lib/config/site";
 import {
   API_ERROR_CODES,
+  LoginRequestSchema,
   LoginResponseSchema,
   LoginResultSchema,
   MeDataSchema,
@@ -63,6 +64,23 @@ describe("product contract", () => {
         activeMarkingPeriodId: null,
       }).success,
     ).toBe(true);
+  });
+
+  it("accepts a district picker id and rejects unsafe ids", () => {
+    expect(
+      LoginRequestSchema.safeParse({
+        username: "student",
+        password: "secret",
+        districtId: "30",
+      }).success,
+    ).toBe(true);
+    expect(
+      LoginRequestSchema.safeParse({
+        username: "student",
+        password: "secret",
+        districtId: "30\" onchange=\"alert(1)",
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects a malformed login status", () => {

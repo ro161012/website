@@ -55,6 +55,12 @@ const NAV: ReadonlyArray<{ id: View; label: string; index: string }> = [
   { id: "more", label: "More", index: "05" },
 ];
 
+interface BootstrapPayload {
+  me: MeData;
+  courses: CourseSummary[];
+  upcoming: AssignmentWithCourse[];
+}
+
 const VIEW_META: Record<View, { eyebrow: string; title: string }> = {
   home: { eyebrow: "Today", title: "Home" },
   grades: { eyebrow: "Marking period", title: "Grades" },
@@ -70,7 +76,13 @@ function greeting(): string {
   return "Good evening";
 }
 
-export function Workspace() {
+export function Workspace({
+  initialDistrictId,
+  initialStudentId,
+}: {
+  initialDistrictId: string;
+  initialStudentId: string;
+}) {
   const router = useRouter();
   const [me, setMe] = useState<MeData | null>(null);
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
@@ -194,42 +206,56 @@ export function Workspace() {
     async function load() {
       setRefreshing(true);
       setError(null);
+
+      // Paint the last saved record immediately while the fresh copy loads.
+      const lastData = loadLastData();
+      if (
+        lastData &&
+        lastData.me.district.id === initialDistrictId &&
+        lastData.me.student.id === initialStudentId
+      ) {
+        setMe((current) => current ?? lastData.me);
+        setCourses((current) => current ?? lastData.courses);
+        setUpcoming((current) => current ?? lastData.upcoming);
+        setMarkingPeriod(
+          (current) => current ?? lastData.me.activeMarkingPeriodId,
+        );
+        setLastUpdated((current) => current ?? lastData.fetchedAt);
+        setBooted(true);
+      }
+
       try {
-        const meResult = await apiGet<MeData>("/api/me");
-        const period = markingPeriodRef.current ?? meResult.data.activeMarkingPeriodId;
-        const [courseResult, upcomingResult] = await Promise.all([
-          apiGet<CourseSummary[]>(
-            `/api/courses${period ? `?mp=${encodeURIComponent(period)}` : ""}`,
-          ),
-          apiGet<AssignmentWithCourse[]>("/api/assignments/upcoming?days=14"),
-        ]);
+        const selectedPeriod = markingPeriodRef.current;
+        const result = await apiGet<BootstrapPayload>(
+          `/api/bootstrap${
+            selectedPeriod ? `?mp=${encodeURIComponent(selectedPeriod)}` : ""
+          }`,
+        );
+        const snapshot = result.data;
+        const period = selectedPeriod ?? snapshot.me.activeMarkingPeriodId;
         if (cancelled) return;
 
-        setMe(meResult.data);
+        setMe(snapshot.me);
         setMarkingPeriod(period);
         markingPeriodRef.current = period;
-        setCourses(courseResult.data);
-        setUpcoming(upcomingResult.data);
-        setLastUpdated(courseResult.fetchedAt ?? new Date().toISOString());
+        setCourses(snapshot.courses);
+        setUpcoming(snapshot.upcoming);
+        setLastUpdated(result.fetchedAt);
         setOffline(false);
         saveLastData({
-          me: meResult.data,
-          courses: courseResult.data,
-          upcoming: upcomingResult.data,
-          fetchedAt: courseResult.fetchedAt ?? new Date().toISOString(),
+          me: snapshot.me,
+          courses: snapshot.courses,
+          upcoming: snapshot.upcoming,
+          fetchedAt: result.fetchedAt,
         });
-        mergeWarnings([
-          ...meResult.warnings,
-          ...courseResult.warnings,
-          ...upcomingResult.warnings,
-        ]);
+        mergeWarnings(result.warnings);
         requestedDetails.current.clear();
         setDetails({});
 
-        if (meResult.data.mode === "demo") {
-          await seedDemoSnapshots(meResult.data, courseResult.data);
+        if (snapshot.me.mode === "demo") {
+          await seedDemoSnapshots(snapshot.me, snapshot.courses);
         }
-        const stored = await listSnapshots(meResult.data.student.id);
+        const stored = await listSnapshots(snapshot.me.student.id);
         if (!cancelled) setSnapshots(stored);
       } catch (problem) {
         if (cancelled) return;
@@ -237,14 +263,18 @@ export function Workspace() {
           handleSessionLost();
           return;
         }
-        const cached = loadLastData();
-        if (cached) {
-          setMe(cached.me);
-          setCourses(cached.courses);
-          setUpcoming(cached.upcoming);
-          setMarkingPeriod(cached.me.activeMarkingPeriodId);
-          markingPeriodRef.current = cached.me.activeMarkingPeriodId;
-          setLastUpdated(cached.fetchedAt);
+        const fallback = loadLastData();
+        if (
+          fallback &&
+          fallback.me.district.id === initialDistrictId &&
+          fallback.me.student.id === initialStudentId
+        ) {
+          setMe(fallback.me);
+          setCourses(fallback.courses);
+          setUpcoming(fallback.upcoming);
+          setMarkingPeriod(fallback.me.activeMarkingPeriodId);
+          markingPeriodRef.current = fallback.me.activeMarkingPeriodId;
+          setLastUpdated(fallback.fetchedAt);
           setOffline(true);
           setError("Showing the last record saved on this device.");
         } else {
@@ -264,40 +294,92 @@ export function Workspace() {
     };
     // markingPeriod is intentionally excluded: refresh should keep the current
     // term, and choosePeriod fetches its own course list.
-  }, [refreshToken, handleFailure, handleSessionLost, mergeWarnings]);
+  }, [
+    refreshToken,
+    initialDistrictId,
+    initialStudentId,
+    handleFailure,
+    handleSessionLost,
+    mergeWarnings,
+  ]);
 
   useEffect(() => {
-    if (!me || !courses || view === "more") return;
+    if (!me || !courses || view === "more" || view === "tools") return;
     const pending = courses.filter(
-      (course) => !details[course.id] && !requestedDetails.current.has(course.id),
+      (course) => !requestedDetails.current.has(course.id),
     );
     if (pending.length === 0) return;
     for (const course of pending) requestedDetails.current.add(course.id);
 
     let cancelled = false;
-    void Promise.all(
-      pending.map(async (course) => {
+    let idleHandle: number | null = null;
+    let usedIdle = false;
+
+    async function loadCourse(course: CourseSummary): Promise<boolean> {
+      const query = markingPeriod
+        ? `?mp=${encodeURIComponent(markingPeriod)}`
+        : "";
+      for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const query = markingPeriod
-            ? `?mp=${encodeURIComponent(markingPeriod)}`
-            : "";
           const result = await apiGet<Course>(
             `/api/courses/${encodeURIComponent(course.id)}${query}`,
           );
-          if (cancelled) return;
+          if (cancelled) return true;
           setDetails((previous) => ({ ...previous, [course.id]: result.data }));
           mergeWarnings(result.warnings);
+          return true;
         } catch (problem) {
-          if (cancelled) return;
-          if (problem instanceof SessionLostError) handleSessionLost();
+          if (cancelled) return true;
+          if (problem instanceof SessionLostError) {
+            handleSessionLost();
+            return true;
+          }
+          if (attempt === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 700));
+          }
         }
-      }),
-    );
+      }
+      return false;
+    }
+
+    async function worker(queue: CourseSummary[]): Promise<void> {
+      for (;;) {
+        const course = queue.shift();
+        if (!course || cancelled) return;
+        if (!(await loadCourse(course))) {
+          requestedDetails.current.delete(course.id);
+        }
+      }
+    }
+
+    const start = () => {
+      if (cancelled) return;
+      const queue = [...pending];
+      // HAC throttles aggressively when a whole timetable is fetched at once;
+      // two at a time keeps every page under the upstream timeout.
+      void Promise.all(
+        Array.from({ length: Math.min(2, queue.length) }, () => worker(queue)),
+      );
+    };
+
+    // Course details are only needed for the missing-work list and Insights.
+    // Let the first paint and the bootstrap request finish before asking HAC
+    // for seven more pages, so the dashboard stops competing with itself.
+    if (typeof window.requestIdleCallback === "function") {
+      usedIdle = true;
+      idleHandle = window.requestIdleCallback(start, { timeout: 2000 });
+    } else {
+      idleHandle = window.setTimeout(start, 900);
+    }
 
     return () => {
       cancelled = true;
+      if (idleHandle !== null) {
+        if (usedIdle) window.cancelIdleCallback(idleHandle);
+        else window.clearTimeout(idleHandle);
+      }
     };
-  }, [view, courses, me, details, markingPeriod, mergeWarnings, handleSessionLost]);
+  }, [view, courses, me, markingPeriod, mergeWarnings, handleSessionLost]);
 
   const courseSignature = useMemo(
     () =>
@@ -764,11 +846,10 @@ export function Workspace() {
             {view === "tools" ? (
               <ToolsScreen
                 courses={courses ?? []}
+                details={details}
                 markingPeriod={markingPeriod}
                 notify={notify}
-                onOpenCourse={setSelectedCourseId}
                 onSessionLost={handleSessionLost}
-                settings={settings}
               />
             ) : null}
 

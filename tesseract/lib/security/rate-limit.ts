@@ -79,3 +79,4 @@ export const loginMinuteLimiter = new FixedWindowRateLimiter();
 export const loginHourLimiter = new FixedWindowRateLimiter();
 export const dataLimiter = new FixedWindowRateLimiter();
 export const demoLimiter = new FixedWindowRateLimiter();
+export const directoryLimiter = new FixedWindowRateLimiter();

@@ -9,7 +9,7 @@ import { guardLogin } from "@/lib/api/guards";
 import { apiJson, handleApi } from "@/lib/api/route";
 import { getHacDistrictUrl } from "@/lib/config/hac";
 import { loginToHac } from "@/lib/hac/auth";
-import { applySessionCookie } from "@/lib/session/current";
+import { applySessionCookie, clearLogoutCookie } from "@/lib/session/current";
 import { createSession } from "@/lib/session/crypto";
 import { LoginRequestSchema, type LoginResult } from "@/lib/types";
 
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const login = await loginToHac({
       ...parsed.data,
       districtUrl: parsed.data.districtUrl ?? getHacDistrictUrl(),
+      districtId: parsed.data.districtId,
     });
 
     if (login.status === "mfa_required") {
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
     const response = apiJson(payload, login.warnings);
     applySessionCookie(response, session);
+    clearLogoutCookie(response);
     return response;
   });
 }

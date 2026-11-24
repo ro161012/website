@@ -7,6 +7,8 @@ export interface VaultCredentials {
   districtUrl: string;
   username: string;
   password: string;
+  districtId?: string;
+  districtName?: string;
 }
 
 interface VaultRecord {
@@ -136,7 +138,9 @@ export async function unlockVault(masterPassword: string): Promise<VaultCredenti
     if (
       typeof parsed.districtUrl !== "string" ||
       typeof parsed.username !== "string" ||
-      typeof parsed.password !== "string"
+      typeof parsed.password !== "string" ||
+      (parsed.districtId !== undefined && typeof parsed.districtId !== "string") ||
+      (parsed.districtName !== undefined && typeof parsed.districtName !== "string")
     ) {
       throw new Error("Saved sign-in is incomplete.");
     }

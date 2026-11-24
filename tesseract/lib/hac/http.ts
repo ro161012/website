@@ -17,7 +17,7 @@ import {
   UpstreamTimeoutProblem,
 } from "@/lib/security/errors";
 
-const DEFAULT_TIMEOUT_MS = 12_000;
+const DEFAULT_TIMEOUT_MS = 20_000;
 const DEFAULT_MAX_BYTES = 4 * 1024 * 1024;
 const MAX_REDIRECTS = 6;
 

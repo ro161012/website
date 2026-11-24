@@ -1,5 +1,6 @@
 .dashboardPage {
   position: relative;
+  z-index: 2; /* above the fixed backdrop scrim, like the login/privacy pages */
   isolation: isolate;
   min-height: 100dvh;
   overflow-x: clip;
@@ -2072,31 +2073,6 @@
 /* Flat, gradient-free material: a clear tint, a hairline rim and a soft
    contact shadow. It reads as glass without Windows transparency effects
    or backdrop blur. */
-
-.dashboardPage::before,
-.dashboardPage::after {
-  content: "";
-  position: fixed;
-  z-index: 0;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.dashboardPage::before {
-  top: -22vw;
-  left: -18vw;
-  width: 72vw;
-  height: 72vw;
-  background-color: #d3d7d7;
-}
-
-.dashboardPage::after {
-  right: -14vw;
-  bottom: -24vw;
-  width: 64vw;
-  height: 64vw;
-  background-color: #d9dddd;
-}
 
 .sidebar,
 .topbar,

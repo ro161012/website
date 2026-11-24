@@ -51,9 +51,12 @@ dashboard with seven courses, three marking periods, attendance, reports and a
 transcript. Demo data is generated in-process; no network request leaves the
 server.
 
-Signing in with a real account requires the district HAC address, your own
-username and password. The district address is entered on the sign-in form and
-can be saved for next time.
+Signing in with a real account needs only your own username and password. The
+deployment is preconfigured with a default district (Round Rock ISD unless
+`HAC_DISTRICT_URL` is set), so the HAC address is never required. Choose
+**Change** to autofill from a shared HAC network: pick the network, then your
+district from the full list it publishes. Any other HAC address can be pasted
+and searched with **Find districts at this address**.
 
 ### Scripts
 
@@ -73,11 +76,11 @@ can be saved for next time.
 
 | Area | What it does |
 | --- | --- |
-| Sign in | District URL with saved districts, password sign-in, encrypted local vault, demo entry, session-expiry handling |
+| Sign in | Preconfigured district, autofill from shared HAC networks or any HAC address, saved districts, password sign-in, encrypted local vault, demo entry, session-expiry handling |
 | Home | Overall average, quick statistics, upcoming and missing work, local snapshot trend |
 | Grades | Marking-period switcher, course cards, missing/upcoming counts, hide and reorder, course detail sheet with categories, assignments and trend |
 | Insights | Local snapshot history, biggest movers, momentum, recent grade changes |
-| Tools | Weighted/unweighted GPA calculator, configurable scale and thresholds, per-assignment and hypothetical what-if planning |
+| Tools | RRISD weighted 6.0 / unweighted 4.0 GPA calculator seeded from HAC, plus per-assignment and hypothetical what-if planning |
 | More | Report cards, transcript, monthly attendance calendar, teacher directory, settings |
 | Settings | Theme, accent, grade thresholds, GPA scale, glass intensity, data export/delete, legal notice |
 | PWA | Installable manifest, app icons, offline shell; API requests are never cached |
@@ -102,8 +105,16 @@ The material is ported from the portfolio design, not approximated:
   mobile tabs, segmented controls, sheets and toasts. Tables, lists, charts and
   long-form text stay on solid surfaces.
 - Browsers without `backdrop-filter` get a readable translucent fallback;
-  `prefers-reduced-motion`, `prefers-contrast: more` and `forced-colors` each
-  have defined behavior in `app/globals.css`.
+  `prefers-reduced-motion`, `prefers-reduced-transparency: reduce`,
+  `prefers-contrast: more` and `forced-colors` each have defined behavior in
+  `app/globals.css`.
+- Reduced transparency was tested in Chromium: the lens, tint and rim remain
+  identical to the normal rendering, and the computed material matches
+  rxbow.vercel.app.
+- The background is the `starfield` piece from
+  [`ascii.rest`](https://github.com/bas3line/ascii) (MIT), drawn as animated
+  ASCII text. The app's own Reduce motion setting freezes it; otherwise it
+  plays even when the OS asks for reduced motion.
 
 Charts are hand-built SVG (`components/ui/ui.tsx`) with screen-reader table
 fallbacks; no client chart library is installed.
@@ -117,7 +128,8 @@ Copy `.env.example` to `.env.local`. Never commit `.env.local`.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `SESSION_SECRET` | **Yes** | ≥ 32 bytes; derives the AES-256-GCM session key via HKDF |
-| `HAC_DISTRICT_URL` | No | Default district HAC base URL for the sign-in form |
+| `HAC_DISTRICT_URL` | No | Default district HAC base URL; the sign-in form uses it automatically |
+| `HAC_DISTRICT_NAME` | No | Human label for that district, e.g. `Round Rock ISD` |
 | `HAC_ALLOWED_HOST_SUFFIXES` | No | Comma-separated host suffixes the server may contact; empty applies the default SSRF guard to public HTTPS hosts |
 | `HAC_PROFILE` | No | Force one configured profile id for every district |
 | `HAC_PROFILES` | No | JSON array of district-specific profile overrides |
@@ -213,12 +225,16 @@ npm run check
 ```
 
 The suite covers contracts, session crypto, cookies, SSRF policy, rate limits,
-same-origin checks, login form extraction, HAC parsers, district profiles, the
-demo provider, grade math, insight diffing and local snapshots.
+same-origin checks, login form extraction, HAC district-picker parsing, HAC
+parsers, district profiles, the demo provider, grade math, insight diffing and
+local snapshots.
 
-Accessibility is documented in [`docs/accessibility.md`](docs/accessibility.md):
-implemented behavior is listed separately from checks that still need a manual
-or automated audit. Lighthouse has not been run as part of this build.
+Accessibility is documented in [`docs/accessibility.md`](docs/accessibility.md).
+On the final production build, Lighthouse 12.8.2 scored **100** on both the
+sign-in page and the demo dashboard, and axe-core 4.10.3 found **0 violations**
+on sign-in, dashboard, Grades, the course dialog, Settings and privacy. The
+dialog traps Tab/Shift+Tab and restores focus on close. Screen-reader,
+zoom/reflow, touch-target and PWA offline checks remain manual and were not run.
 
 ---
 
@@ -247,8 +263,8 @@ or automated audit. Lighthouse has not been run as part of this build.
    - `SESSION_SECRET` — generate a separate 32+ byte secret per environment.
    - `NEXT_PUBLIC_APP_URL` — the deployment origin, e.g.
      `https://tesseract.example`.
-   - `HAC_DISTRICT_URL` (if the district is fixed) and any `HAC_PROFILES`,
-     `HAC_ALLOWED_HOST_SUFFIXES`.
+   - `HAC_DISTRICT_URL` and `HAC_DISTRICT_NAME` (if the district is fixed), and
+     any `HAC_PROFILES`, `HAC_ALLOWED_HOST_SUFFIXES`.
 6. Deploy. The API routes run on the Node.js runtime; no database, cron or
    additional service is required.
 7. After the first deploy, sign in with your own account and verify the
@@ -281,17 +297,23 @@ The full note is at `/privacy` and is linked from Settings.
 
 ## Known limitations
 
-- District HAC markup varies. Real-account sign-in has not been verified for
-  every district; a profile may be required.
+- District HAC markup varies. A real-account smoke test against the configured
+  district passed on 23 Nov 2026, but other districts and populated older
+  marking periods may still need a profile or parser update; a non-current
+  period returned no course cards and surfaced `courses_missing`.
+- District autofill covers six verified shared HAC networks (416 district
+  options at the time of writing). It is not a national directory; a district
+  on its own HAC host can still be reached by pasting its address.
 - CAPTCHA, hardware MFA and district SSO are surfaced as typed failures, not
   bypassed.
 - The in-memory cache and rate limiter are per server instance. Vercel may run
   more than one instance, so limits are best-effort.
 - Glass refraction is Chromium-only; other browsers receive the baseline blur
-  and rim material. Reduced-motion, high-contrast and forced-colors modes are
-  supported.
-- Lighthouse, axe and screen-reader passes have not been run; see
-  `docs/accessibility.md` for the remaining manual checks.
+  and rim material. Reduced-motion, reduced-transparency, high-contrast and
+  forced-colors modes are supported.
+- Lighthouse and axe were run on the demo and key screens; screen-reader,
+  zoom/reflow, individual touch-target and PWA offline checks have not been run.
+  See `docs/accessibility.md` for the remaining manual checks.
 
 ---
 

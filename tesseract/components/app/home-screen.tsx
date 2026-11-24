@@ -51,9 +51,12 @@ export function HomeScreen({
   const nextWeek = (upcoming ?? []).filter((assignment) => {
     if (!assignment.dueDate) return false;
     const due = new Date(`${assignment.dueDate}T12:00:00`).getTime();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return due >= today.getTime() && due <= today.getTime() + 7 * 86_400_000;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    end.setHours(23, 59, 59, 999);
+    return due >= start.getTime() && due <= end.getTime();
   });
   const loaded = courses !== null;
   const missingCount = missing.length;

@@ -10,6 +10,8 @@ interface Entry {
 }
 
 const store = new Map<string, Entry>();
+/** In-flight loads share one upstream request instead of racing each other. */
+const pending = new Map<string, Promise<unknown>>();
 
 function prune(now: number): void {
   if (store.size < MAX_ENTRIES) return;
@@ -44,12 +46,23 @@ export async function cached<T>(
   const existing = store.get(key);
   if (existing && existing.expiresAt > now) return existing.value as T;
 
-  const value = await load();
-  prune(now);
-  store.set(key, { value, expiresAt: now + TTL_MS });
-  return value;
+  const inFlight = pending.get(key);
+  if (inFlight) return inFlight as Promise<T>;
+
+  const promise = load()
+    .then((value) => {
+      prune(Date.now());
+      store.set(key, { value, expiresAt: Date.now() + TTL_MS });
+      return value;
+    })
+    .finally(() => {
+      pending.delete(key);
+    });
+  pending.set(key, promise);
+  return promise;
 }
 
 export function clearProviderCache(): void {
   store.clear();
+  pending.clear();
 }

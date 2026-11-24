@@ -155,6 +155,27 @@ export class HacProvider implements DataProvider {
     return cached(providerCacheKey(this.session, suffix), compute);
   }
 
+  /**
+   * The schedule page is the expensive shared read: me, courses, upcoming and
+   * every course detail all need it. Cache it once per marking period so a
+   * normal dashboard boot makes one schedule request instead of four.
+   */
+  private async schedule(
+    markingPeriodId?: string | null,
+  ): Promise<LoadedSchedule> {
+    const current = await cached(
+      providerCacheKey(this.session, "schedule:current"),
+      () => this.loadSchedule(null),
+    );
+    if (!markingPeriodId || markingPeriodId === current.activeMarkingPeriodId) {
+      return current;
+    }
+    return cached(
+      providerCacheKey(this.session, `schedule:${markingPeriodId}`),
+      () => this.loadSchedule(markingPeriodId),
+    );
+  }
+
   private async switchMarkingPeriod(
     html: string,
     pageUrl: URL,
@@ -291,7 +312,7 @@ export class HacProvider implements DataProvider {
 
   getMe(): Promise<ProviderResult<MeData>> {
     return this.load("me", async () => {
-      const schedule = await this.loadSchedule(null);
+      const schedule = await this.schedule(null);
       const student =
         this.session.students.find(
           (candidate) => candidate.id === this.session.activeStudentId,
@@ -316,7 +337,7 @@ export class HacProvider implements DataProvider {
 
   getCourses(markingPeriodId?: string | null): Promise<ProviderResult<CourseSummary[]>> {
     return this.load(`courses:${markingPeriodId ?? "current"}`, async () => {
-      const schedule = await this.loadSchedule(markingPeriodId);
+      const schedule = await this.schedule(markingPeriodId);
       return result(
         schedule.courses.map(summaryOf),
         schedule.warnings,
@@ -330,7 +351,7 @@ export class HacProvider implements DataProvider {
     markingPeriodId?: string | null,
   ): Promise<ProviderResult<Course>> {
     return this.load(`course:${markingPeriodId ?? "current"}:${courseId}`, async () => {
-      const schedule = await this.loadSchedule(markingPeriodId);
+      const schedule = await this.schedule(markingPeriodId);
       let course = schedule.courses.find((candidate) => candidate.id === courseId);
       const scheduledName = course?.name;
       const warnings = [...schedule.warnings];
@@ -382,7 +403,7 @@ export class HacProvider implements DataProvider {
     days = 14,
   ): Promise<ProviderResult<AssignmentWithCourse[]>> {
     return this.load(`upcoming:${days}`, async () => {
-      const schedule = await this.loadSchedule(null);
+      const schedule = await this.schedule(null);
       const start = new Date().toISOString().slice(0, 10);
       const end = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
       const assignments: AssignmentWithCourse[] = [];

@@ -16,6 +16,7 @@ import {
 import { CookieJar } from "./cookies";
 import { clearCredentialFields, extractForm } from "./html-form";
 import { fetchHacPage } from "./http";
+import { parseDistrictDirectory } from "./districts";
 import { profileForDistrictUrl, type DistrictProfile } from "./profiles";
 import { joinHacPath, normalizeDistrictUrl } from "./url";
 import type { StoredCookie } from "@/lib/session/schema";
@@ -41,6 +42,7 @@ export interface HacLoginInput {
   username: string;
   password: string;
   campusId?: string;
+  districtId?: string;
 }
 
 export interface StudentChoice {
@@ -65,11 +67,19 @@ function hostLabel(hostname: string): string {
   return truncate(hostname.replace(/^www\./, ""), 120) || "Home Access Center";
 }
 
-function districtFor(baseUrl: string, profile: DistrictProfile): District {
+function districtFor(
+  baseUrl: string,
+  profile: DistrictProfile,
+  name?: string,
+  districtId?: string,
+): District {
   const url = new URL(baseUrl);
+  const identity = districtId
+    ? `${url.hostname}:${districtId}`
+    : url.hostname;
   return {
-    id: stableId("dist", url.hostname),
-    name: hostLabel(url.hostname),
+    id: stableId("dist", identity),
+    name: truncate(cleanText(name) || hostLabel(url.hostname), 120),
     baseUrl,
     profileId: profile.id,
   };
@@ -538,6 +548,27 @@ export async function loginToHac(input: HacLoginInput): Promise<HacLoginResult> 
   }
 
   const form = extractLoginFields(loginPage.html, loginPage.finalUrl, profile);
+  let selectedDistrictName: string | undefined;
+
+  if (input.districtId) {
+    const directory = parseDistrictDirectory(loginPage.html);
+    if (!directory) {
+      throw new InvalidInputProblem(
+        "This HAC address did not show a district picker. Sign in with the default district or paste your district's own HAC address.",
+      );
+    }
+    const option = directory.options.find(
+      (candidate) => candidate.id === input.districtId,
+    );
+    if (!option) {
+      throw new InvalidInputProblem(
+        "That district is no longer available on this HAC page. Reload the district list and try again.",
+      );
+    }
+    form.fields[directory.field] = option.id;
+    selectedDistrictName = option.name;
+  }
+
   const submitted = await fetchHacPage({
     url: form.action,
     jar,
@@ -615,7 +646,12 @@ export async function loginToHac(input: HacLoginInput): Promise<HacLoginResult> 
     status: "authenticated",
     student,
     students,
-    district: districtFor(district.baseUrl, profile),
+    district: districtFor(
+      district.baseUrl,
+      profile,
+      selectedDistrictName,
+      input.districtId,
+    ),
     cookies: jar.toJson(),
     warnings,
   };
